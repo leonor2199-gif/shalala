@@ -20,8 +20,7 @@
     "cors": "^2.8.5",
     "multer": "^1.4.5-lts.1",
     "node-stream-zip": "^1.15.0",
-    "unzipper": "^0.10.14",
-    "connect-mongo": "^5.0.0"
+    "unzipper": "^0.10.14"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
