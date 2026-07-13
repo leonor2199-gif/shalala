@@ -28,14 +28,26 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Session configuration for production
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+// Session configuration with MongoDB store (better for Render)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'default_secret_key',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    touchAfter: 24 * 3600, // 1 day
+    crypto: {
+      secret: process.env.SESSION_SECRET || 'default_secret_key'
+    }
+  }),
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax',
+    httpOnly: true
   }
 }));
 
