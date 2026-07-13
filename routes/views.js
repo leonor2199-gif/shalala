@@ -30,7 +30,7 @@ router.get('/', authMiddleware, (req, res) => {
   res.redirect('/dashboard');
 });
 
-// Edit page - protected
+// Edit page -  protected
 router.get('/edit/:id', authMiddleware, async (req, res) => {
   try {
     const record = await Recharge.findById(req.params.id);
