@@ -17,35 +17,35 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err.message));
 
-// Middleware - ORDER MATTERS!
+// Middleware
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// SIMPLE SESSION - No MongoDB store (works on Render)
+// Simple session
 app.use(session({
   secret: process.env.SESSION_SECRET || 'my_super_secret_key_123',
   resave: false,
   saveUninitialized: true,
   cookie: { 
-    secure: false, // Set to true if using HTTPS (Render uses HTTPS)
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-// View engine setup
+// View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Make session available in all views
+// Make session available in views
 app.use((req, res, next) => {
   res.locals.session = req.session;
   next();
 });
 
-// Routes - ORDER MATTERS!
+// Routes
 app.use('/api', require('./routes/api'));
 app.use('/', require('./routes/views'));
 
@@ -75,3 +75,15 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📊 Dashboard: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/dashboard`);
   console.log(`🔐 Login: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/login`);
 });
+
+// ========================================
+// START BOT (if not in production or always)
+// ========================================
+
+// Always start bot - it will use polling
+try {
+  const bot = require('./bot');
+  console.log('🤖 Bot module loaded');
+} catch (error) {
+  console.error('❌ Failed to load bot:', error.message);
+}
