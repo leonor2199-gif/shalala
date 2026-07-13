@@ -1,4 +1,4 @@
-// Updated auth middleware with better session handling
+// Simple session-based authentication middleware
 const authMiddleware = (req, res, next) => {
   // Check if user is logged in
   if (req.session && req.session.isLoggedIn) {
@@ -14,14 +14,13 @@ const authMiddleware = (req, res, next) => {
   res.redirect('/login');
 };
 
-// Login handler with better error handling
+// Login handler
 const login = (req, res) => {
   try {
     const { password } = req.body;
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     
     console.log('🔐 Login attempt received');
-    console.log('📝 Admin password from env:', adminPassword ? 'Set' : 'Not set');
     console.log('📝 Password provided:', password ? 'Yes' : 'No');
     
     if (!password) {
@@ -36,7 +35,7 @@ const login = (req, res) => {
           console.error('Session save error:', err);
           return res.render('login', { error: 'Session error. Please try again.' });
         }
-        console.log('✅ Login successful, redirecting to dashboard');
+        console.log('✅ Login successful');
         res.redirect('/dashboard');
       });
     } else {
