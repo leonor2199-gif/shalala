@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="edit-container">
+        <div class="edit-card">
+            <div class="edit-header">
+                <h1><i class="fas fa-edit"></i> Edit Record</h1>
+                <a href="/dashboard" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+            
+            <form id="editForm" onsubmit="updateRecord(event)">
+                <input type="hidden" id="editId" value="<%= record._id %>">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUsername">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="editUsername" value="<%= record.username %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserId">
+                            <i class="fas fa-id-card"></i> User ID
+                        </label>
+                        <input type="text" id="editUserId" value="<%= record.user_id %>" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editAmount">
+                            <i class="fas fa-dollar-sign"></i> Amount
+                        </label>
+                        <input type="number" id="editAmount" value="<%= record.amount %>" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editFee">
+                            <i class="fas fa-percent"></i> Fee
+                        </label>
+                        <input type="text" id="editFee" value="<%= record.fee %>" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRequestTime">
+                            <i class="fas fa-clock"></i> Request Time
+                        </label>
+                        <input type="datetime-local" id="editRequestTime" value="<%= record.request_time.toISOString().slice(0, 16) %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProcessTime">
+                            <i class="fas fa-check-circle"></i> Process Time
+                        </label>
+                        <input type="datetime-local" id="editProcessTime" value="<%= record.process_time.toISOString().slice(0, 16) %>" required>
+                    </div>
+                </div>
+                
+                <div class="edit-actions">
+                    <a href="/dashboard" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        async function updateRecord(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('editId').value;
+            const data = {
+                username: document.getElementById('editUsername').value,
+                user_id: document.getElementById('editUserId').value,
+                amount: parseFloat(document.getElementById('editAmount').value),
+                fee: document.getElementById('editFee').value,
+                request_time: document.getElementById('editRequestTime').value,
+                process_time: document.getElementById('editProcessTime').value
+            };
+            
+            try {
+                const response = await fetch(`/api/records/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                alert('Error updating record');
+            }
+        }
+    </script>
+</body>
+</html>

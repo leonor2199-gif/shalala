@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Recharge Dashboard' %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <i class="fas fa-coins header-icon"></i>
+                <h1>💰 Recharge Records</h1>
+            </div>
+            <div class="header-right">
+                <span class="user-badge">
+                    <i class="fas fa-user"></i>
+                    <%= user || 'Admin' %>
+                </span>
+                <a href="/logout" class="btn btn-danger btn-sm">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalRecords">0</h3>
+                <p>Total Records</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalAmount">$0</h3>
+                <p>Total Amount</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="uniqueUsers">0</h3>
+                <p>Unique Users</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="todayRecords">0</h3>
+                <p>Today's Records</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-container">
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by username or user ID..." />
+                <button onclick="searchRecords()" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button onclick="clearSearch()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </div>
+        <div class="actions-section">
+            <button onclick="openAddModal()" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add New
+            </button>
+            <button onclick="exportRecords()" class="btn btn-info">
+                <i class="fas fa-download"></i> Export
+            </button>
+            <button onclick="openDeleteAllModal()" class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Delete All
+            </button>
+            <span id="recordCount" class="record-count">Showing: 0 records</span>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <div class="table-wrapper">
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Username</th>
+                        <th>User ID</th>
+                        <th>Amount</th>
+                        <th>Fee</th>
+                        <th>Request Time</th>
+                        <th>Process Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="8" class="loading-row">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading records...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-controls">
+            <button onclick="changePage('prev')" id="prevBtn" class="btn btn-secondary">
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button onclick="changePage('next')" id="nextBtn" class="btn btn-secondary">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        <div class="page-size-control">
+            <label>Per page:</label>
+            <select id="pageSize" onchange="changePageSize()">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="recordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Add Record</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="recordForm" onsubmit="saveRecord(event)">
+                <input type="hidden" id="recordId" value="">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formUsername">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="formUsername" placeholder="Enter username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="formUserId">
+                            <i class="fas fa-id-card"></i> User ID
+                        </label>
+                        <input type="text" id="formUserId" placeholder="Enter user ID" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formAmount">
+                            <i class="fas fa-dollar-sign"></i> Amount
+                        </label>
+                        <input type="number" id="formAmount" placeholder="Enter amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="formFee">
+                            <i class="fas fa-percent"></i> Fee
+                        </label>
+                        <input type="text" id="formFee" placeholder="e.g., 0.00(0%)" value="0.00(0%)" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formRequestTime">
+                            <i class="fas fa-clock"></i> Request Time
+                        </label>
+                        <input type="datetime-local" id="formRequestTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="formProcessTime">
+                            <i class="fas fa-check-circle"></i> Process Time
+                        </label>
+                        <input type="datetime-local" id="formProcessTime" required>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> <span id="submitBtnText">Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Confirm Delete</h2>
+                <span class="close" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this record?</p>
+                <p class="delete-warning">This action cannot be undone!</p>
+                <input type="hidden" id="deleteId" value="">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeDeleteModal()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button onclick="confirmDelete()" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete All Confirmation Modal -->
+    <div id="deleteAllModal" class="modal">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Delete All Records</h2>
+                <span class="close" onclick="closeDeleteAllModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 18px; margin-bottom: 20px;">
+                    ⚠️ <strong>Warning!</strong> This will delete <strong>ALL</strong> records from the database.
+                </p>
+                <p style="color: #ef4444; font-weight: 600; margin-bottom: 20px;">
+                    This action cannot be undone!
+                </p>
+                <div style="background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca;">
+                    <p id="deleteAllCount" style="margin: 0; font-size: 16px;">
+                        Total records to delete: <strong id="deleteAllTotal">0</strong>
+                    </p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="deleteAllConfirm" style="width: 20px; height: 20px;">
+                        <span style="font-weight: 600;">I understand this action is irreversible</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeDeleteAllModal()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button onclick="confirmDeleteAll()" id="deleteAllBtn" class="btn btn-danger" disabled>
+                    <i class="fas fa-trash-alt"></i> Delete All Records
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle toast-icon"></i>
+            <span id="toastMessage">Success!</span>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

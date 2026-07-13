@@ -1,0 +1,9 @@
+node_modules/
+.env
+temp/
+*.log
+.DS_Store
+*.xlsx
+*.zip
+*.rar
+*.csv
