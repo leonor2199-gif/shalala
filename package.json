@@ -25,7 +25,8 @@
     "node-stream-zip": "^1.15.0",
     "telegraf": "^4.16.3",
     "unzipper": "^0.12.5",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "connect-mongo": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
