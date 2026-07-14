@@ -42,6 +42,63 @@ router.get('/api/withdraw', authMiddleware, async (req, res) => {
   }
 });
 
+// Get single withdraw record
+router.get('/api/withdraw/:id', authMiddleware, async (req, res) => {
+  try {
+    const record = await Withdraw.findById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    res.json(record);
+  } catch (error) {
+    console.error('Error fetching withdraw record:', error);
+    res.status(500).json({ error: 'Failed to fetch withdraw record' });
+  }
+});
+
+// Update withdraw record
+router.put('/api/withdraw/:id', authMiddleware, async (req, res) => {
+  try {
+    const { username, user_id, amount, status, bank_name, bank_account } = req.body;
+    
+    const record = await Withdraw.findById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
+    if (username) record.username = username;
+    if (user_id) record.user_id = user_id;
+    if (amount) record.amount = parseFloat(amount);
+    if (status) record.status = status;
+    if (bank_name) record.bank_name = bank_name;
+    if (bank_account) record.bank_account = bank_account;
+    
+    await record.save();
+    
+    res.json({
+      message: 'Record updated successfully',
+      record
+    });
+  } catch (error) {
+    console.error('Error updating withdraw record:', error);
+    res.status(500).json({ error: 'Failed to update withdraw record' });
+  }
+});
+
+// Delete withdraw record
+router.delete('/api/withdraw/:id', authMiddleware, async (req, res) => {
+  try {
+    const record = await Withdraw.findByIdAndDelete(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    res.json({ message: 'Record deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting withdraw record:', error);
+    res.status(500).json({ error: 'Failed to delete withdraw record' });
+  }
+});
+
 // Delete all withdraw records
 router.delete('/api/withdraw/delete-all', authMiddleware, async (req, res) => {
   try {
@@ -51,32 +108,41 @@ router.delete('/api/withdraw/delete-all', authMiddleware, async (req, res) => {
       deletedCount: result.deletedCount
     });
   } catch (error) {
-    console.error('Error deleting withdraw records:', error);
-    res.status(500).json({ error: 'Failed to delete withdraw records' });
+    console.error('Error deleting all withdraw records:', error);
+    res.status(500).json({ error: 'Failed to delete all withdraw records' });
   }
 });
 
-// Get withdraw stats
-router.get('/api/withdraw/stats', authMiddleware, async (req, res) => {
+// Export withdraw records
+router.get('/api/withdraw/export', authMiddleware, async (req, res) => {
   try {
-    const total = await Withdraw.countDocuments();
-    const totalAmount = await Withdraw.aggregate([
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
-    const statusStats = await Withdraw.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]);
+    const { search = '' } = req.query;
     
-    const amount = totalAmount.length > 0 ? totalAmount[0].total : 0;
+    let query = {};
+    if (search.trim()) {
+      query = {
+        $or: [
+          { username: { $regex: search, $options: 'i' } },
+          { user_id: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
     
-    res.json({
-      total,
-      totalAmount: amount,
-      statusStats
-    });
+    const records = await Withdraw.find(query).sort({ request_time: -1 });
+    
+    const headers = 'Order ID,User ID,Username,VIP Level,Balance,Amount,Fee,Net Amount,Bank,Account,Holder,Status,Request Time\n';
+    const rows = records.map(r => 
+      `${r.order_id || ''},${r.user_id},${r.username},${r.vip_level || ''},${r.balance || ''},${r.amount},${r.fee_percent || '0%'},${r.net_amount || r.amount},${r.bank_name || ''},${r.bank_account || ''},${r.bank_holder || ''},${r.status},${r.request_time}`
+    ).join('\n');
+    
+    const csv = headers + rows;
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=withdraw_export_${Date.now()}.csv`);
+    res.send(csv);
   } catch (error) {
-    console.error('Error fetching withdraw stats:', error);
-    res.status(500).json({ error: 'Failed to fetch withdraw stats' });
+    console.error('Error exporting withdraw records:', error);
+    res.status(500).json({ error: 'Failed to export withdraw records' });
   }
 });
 
