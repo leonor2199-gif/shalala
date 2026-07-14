@@ -45,9 +45,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// ========================================
+// ROUTES
+// ========================================
+
+// Recharge routes
 app.use('/api', require('./routes/api'));
 app.use('/', require('./routes/views'));
+
+// Withdraw routes - IMPORTANT: Add these!
 app.use('/api/withdraw', require('./routes/withdraw'));
 app.use('/', require('./routes/withdraw-views'));
 
@@ -74,18 +80,17 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Dashboard: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/dashboard`);
-  console.log(`🔐 Login: https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/login`);
+  console.log(`📊 Recharge Dashboard: /dashboard`);
+  console.log(`💳 Withdraw Dashboard: /withdraw`);
+  console.log(`🔐 Login: /login`);
 });
 
-// ========================================
-// START BOT (if not in production or always)
-// ========================================
-
-// Always start bot - it will use polling
-try {
-  const bot = require('./bot');
-  console.log('🤖 Bot module loaded');
-} catch (error) {
-  console.error('❌ Failed to load bot:', error.message);
+// Start bot if in production
+if (process.env.NODE_ENV === 'production') {
+  try {
+    require('./bot');
+    console.log('🤖 Bot module loaded');
+  } catch (error) {
+    console.error('❌ Failed to load bot:', error.message);
+  }
 }
