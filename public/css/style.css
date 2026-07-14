@@ -947,3 +947,27 @@ tbody tr:last-child td {
 .btn-purple:hover {
     background: #7c3aed;
 }
+
+
+/* Storage Stats Card */
+.stat-card[style*="grid-column: span 2;"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.stat-card[style*="grid-column: span 2;"] .stat-info p {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-card[style*="grid-column: span 2;"] .stat-info h3 {
+    color: white;
+}
+
+.stat-card[style*="grid-column: span 2;"] .stat-info div {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.stat-card[style*="grid-column: span 2;"] .stat-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
