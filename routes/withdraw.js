@@ -4,7 +4,7 @@ const Withdraw = require('../models/Withdraw');
 const { authMiddleware } = require('../middleware/auth');
 
 // Get withdraw records with pagination and search
-router.get('/api/withdraw', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const { search = '', page = 1, limit = 20 } = req.query;
     
@@ -43,7 +43,7 @@ router.get('/api/withdraw', authMiddleware, async (req, res) => {
 });
 
 // Get single withdraw record
-router.get('/api/withdraw/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const record = await Withdraw.findById(req.params.id);
     if (!record) {
@@ -57,7 +57,7 @@ router.get('/api/withdraw/:id', authMiddleware, async (req, res) => {
 });
 
 // Update withdraw record
-router.put('/api/withdraw/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { username, user_id, amount, status, bank_name, bank_account } = req.body;
     
@@ -86,7 +86,7 @@ router.put('/api/withdraw/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete withdraw record
-router.delete('/api/withdraw/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const record = await Withdraw.findByIdAndDelete(req.params.id);
     if (!record) {
@@ -100,7 +100,7 @@ router.delete('/api/withdraw/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete all withdraw records
-router.delete('/api/withdraw/delete-all', authMiddleware, async (req, res) => {
+router.delete('/delete-all', authMiddleware, async (req, res) => {
   try {
     const result = await Withdraw.deleteMany({});
     res.json({
@@ -114,7 +114,7 @@ router.delete('/api/withdraw/delete-all', authMiddleware, async (req, res) => {
 });
 
 // Export withdraw records
-router.get('/api/withdraw/export', authMiddleware, async (req, res) => {
+router.get('/export', authMiddleware, async (req, res) => {
   try {
     const { search = '' } = req.query;
     
