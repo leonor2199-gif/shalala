@@ -65,6 +65,38 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// Get database storage stats for withdraw
+router.get('/storage-stats', authMiddleware, async (req, res) => {
+  try {
+    const Withdraw = require('../models/Withdraw');
+    
+    // Get collection stats
+    const stats = await Withdraw.db.collection('withdraws').stats();
+    
+    // Calculate sizes in bytes
+    const totalSizeBytes = stats.totalSize || 0;
+    const storageSizeBytes = stats.storageSize || 0;
+    const indexSizeBytes = stats.totalIndexSize || 0;
+    const avgObjSizeBytes = stats.avgObjSize || 0;
+    const count = stats.count || 0;
+    
+    res.json({
+      totalSizeBytes,
+      storageSizeBytes,
+      indexSizeBytes,
+      avgObjSizeBytes,
+      count,
+      totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2),
+      storageSizeMB: (storageSizeBytes / (1024 * 1024)).toFixed(2),
+      indexSizeMB: (indexSizeBytes / (1024 * 1024)).toFixed(2),
+      avgObjSizeKB: (avgObjSizeBytes / 1024).toFixed(2)
+    });
+  } catch (error) {
+    console.error('Error fetching withdraw storage stats:', error);
+    res.status(500).json({ error: 'Failed to fetch storage stats' });
+  }
+});
+
 // ========================================
 // EXPORT RECORDS
 // ========================================
