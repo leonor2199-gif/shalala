@@ -85,29 +85,49 @@
     </div>
 
     <!-- Controls -->
-    <div class="controls-container">
-        <div class="search-section">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search by username, user ID, bank, or holder..." />
-                <button onclick="searchRecords()" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <button onclick="clearSearch()" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Clear
-                </button>
-            </div>
-        </div>
-        <div class="actions-section">
-            <button onclick="exportRecords()" class="btn btn-info">
-                <i class="fas fa-download"></i> Export
+<div class="controls-container">
+    <div class="search-section">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search by username, user ID, bank, or holder..." />
+            <button onclick="searchRecords()" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
             </button>
-            <button onclick="openDeleteAllModal()" class="btn btn-danger">
-                <i class="fas fa-trash-alt"></i> Delete All
+            <button onclick="clearSearch()" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear
             </button>
-            <span id="recordCount" class="record-count">Showing: 0 records</span>
         </div>
     </div>
+    
+    <!-- NEW: Date Range Filter -->
+    <div class="date-filter-section">
+        <div class="date-filter-box">
+            <i class="fas fa-calendar-alt"></i>
+            <input type="date" id="startDate" title="Start Date" />
+            <span style="color: #64748b;">to</span>
+            <input type="date" id="endDate" title="End Date" />
+            <button onclick="applyDateFilter()" class="btn btn-primary btn-sm">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+            <button onclick="clearDateFilter()" class="btn btn-secondary btn-sm">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+    </div>
+    
+    <div class="actions-section">
+        <a href="https://botadmin-2r2n.onrender.com/login" target="_blank" class="btn btn-purple">
+            <i class="fas fa-external-link-alt"></i> Details
+        </a>
+        <button onclick="exportRecords()" class="btn btn-info">
+            <i class="fas fa-download"></i> Export
+        </button>
+        <button onclick="openDeleteAllModal()" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i> Delete All
+        </button>
+        <span id="recordCount" class="record-count">Showing: 0 records</span>
+    </div>
+</div>
 
     <!-- Table -->
     <div class="table-container">
