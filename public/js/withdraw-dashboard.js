@@ -429,6 +429,80 @@ function escapeHtml(text) {
 }
 
 // ========================================
+// LOAD STORAGE STATS
+// ========================================
+async function loadStorageStats() {
+    try {
+        const response = await fetch('/api/withdraw/storage-stats');
+        if (!response.ok) {
+            throw new Error('Failed to fetch storage stats');
+        }
+        
+        const stats = await response.json();
+        
+        const storageDisplay = document.getElementById('storageUsage');
+        const recordCountStorage = document.getElementById('recordCountStorage');
+        const avgRecordSize = document.getElementById('avgRecordSize');
+        
+        if (storageDisplay) {
+            const totalMB = parseFloat(stats.totalSizeMB);
+            if (totalMB > 1024) {
+                storageDisplay.textContent = (totalMB / 1024).toFixed(2) + ' GB';
+            } else {
+                storageDisplay.textContent = totalMB.toFixed(2) + ' MB';
+            }
+            
+            // Color coding based on usage (512MB free tier limit)
+            const storagePercent = (totalMB / 512) * 100;
+            if (storagePercent > 80) {
+                storageDisplay.style.color = '#ef4444';
+            } else if (storagePercent > 60) {
+                storageDisplay.style.color = '#f59e0b';
+            } else {
+                storageDisplay.style.color = '#22c55e';
+            }
+        }
+        
+        if (recordCountStorage) {
+            recordCountStorage.textContent = `${stats.count || 0} records`;
+        }
+        
+        if (avgRecordSize) {
+            avgRecordSize.textContent = `${stats.avgObjSizeKB || 0} KB/record`;
+        }
+        
+    } catch (error) {
+        console.error('Error loading storage stats:', error);
+    }
+}
+
+// Update initialization
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecords();
+    loadStorageStats(); // Add this
+    setupEventListeners();
+    
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchRecords();
+        }
+    });
+});
+
+// Add to loadRecords function
+async function loadRecords() {
+    try {
+        // ... existing code ...
+        
+        // After loading records, refresh storage stats
+        loadStorageStats();
+        
+    } catch (error) {
+        // ... error handling ...
+    }
+}
+
+// ========================================
 // KEYBOARD SHORTCUTS
 // ========================================
 document.addEventListener('keydown', function(e) {
