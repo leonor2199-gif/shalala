@@ -49,7 +49,7 @@ app.use((req, res, next) => {
 app.use('/api', require('./routes/api'));
 app.use('/', require('./routes/views'));
 app.use('/api/withdraw', require('./routes/withdraw'));
-app.use('/withdraw', require('./routes/withdraw-views'));
+app.use('/', require('./routes/withdraw-views'));
 
 // Health check
 app.get('/health', (req, res) => {
