@@ -4,6 +4,8 @@
 let currentPage = 1;
 let currentLimit = 20;
 let currentSearch = '';
+let currentStartDate = '';
+let currentEndDate = '';
 let totalRecords = 0;
 let totalPages = 0;
 
@@ -38,7 +40,7 @@ function setupEventListeners() {
 }
 
 // ========================================
-// LOAD RECORDS
+// LOAD RECORDS WITH FILTERS
 // ========================================
 async function loadRecords() {
     try {
@@ -52,7 +54,15 @@ async function loadRecords() {
             </tr>
         `;
         
-        const url = `/api/withdraw?page=${currentPage}&limit=${currentLimit}&search=${encodeURIComponent(currentSearch)}`;
+        let url = `/api/withdraw?page=${currentPage}&limit=${currentLimit}&search=${encodeURIComponent(currentSearch)}`;
+        
+        if (currentStartDate) {
+            url += `&startDate=${encodeURIComponent(currentStartDate)}`;
+        }
+        if (currentEndDate) {
+            url += `&endDate=${encodeURIComponent(currentEndDate)}`;
+        }
+        
         console.log('📊 Fetching withdraw records from:', url);
         
         const response = await fetch(url);
@@ -281,6 +291,56 @@ async function loadStorageStats() {
 }
 
 // ========================================
+// DATE FILTER FUNCTIONS
+// ========================================
+function applyDateFilter() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!startDate && !endDate) {
+        showToast('Please select a date range', 'info');
+        return;
+    }
+    
+    if (startDate && endDate && startDate > endDate) {
+        showToast('Start date cannot be after end date', 'error');
+        return;
+    }
+    
+    currentStartDate = startDate;
+    currentEndDate = endDate;
+    currentPage = 1;
+    loadRecords();
+    
+    const message = `📅 Filtering from ${startDate || 'start'} to ${endDate || 'end'}`;
+    showToast(message, 'info');
+}
+
+function clearDateFilter() {
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    currentStartDate = '';
+    currentEndDate = '';
+    currentPage = 1;
+    loadRecords();
+    showToast('Date filter cleared', 'info');
+}
+
+// ========================================
+// QUICK DATE FILTERS (Step 7)
+// ========================================
+function setDateRange(days) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    
+    applyDateFilter();
+}
+
+// ========================================
 // SEARCH
 // ========================================
 function searchRecords() {
@@ -482,7 +542,15 @@ async function confirmDeleteAll() {
 // ========================================
 function exportRecords() {
     const search = document.getElementById('searchInput').value.trim();
-    const url = `/api/withdraw/export?search=${encodeURIComponent(search)}`;
+    let url = `/api/withdraw/export?search=${encodeURIComponent(search)}`;
+    
+    if (currentStartDate) {
+        url += `&startDate=${encodeURIComponent(currentStartDate)}`;
+    }
+    if (currentEndDate) {
+        url += `&endDate=${encodeURIComponent(currentEndDate)}`;
+    }
+    
     window.open(url, '_blank');
     showToast('Exporting records...', 'info');
 }
