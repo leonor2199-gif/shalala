@@ -323,6 +323,8 @@ function openDeleteAllModal() {
 
 function closeDeleteAllModal() {
     document.getElementById('deleteAllModal').style.display = 'none';
+    document.getElementById('deleteAllConfirm').checked = false;
+    document.getElementById('deleteAllBtn').disabled = true;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -343,7 +345,10 @@ async function confirmDeleteAll() {
     
     try {
         const response = await fetch('/api/withdraw/delete-all', {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         
         if (!response.ok) {
