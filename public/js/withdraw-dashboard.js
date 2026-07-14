@@ -40,14 +40,30 @@ function setupEventListeners() {
 // ========================================
 async function loadRecords() {
     try {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="loading-row">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading records...
+                </td>
+            </tr>
+        `;
+        
         const url = `/api/withdraw?page=${currentPage}&limit=${currentLimit}&search=${encodeURIComponent(currentSearch)}`;
+        console.log('📊 Fetching withdraw records from:', url);
+        
         const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error('Failed to fetch records');
+            const errorText = await response.text();
+            console.error('❌ Response error:', response.status, errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('✅ Withdraw records received:', data.total, 'records');
+        
         totalRecords = data.total;
         totalPages = data.totalPages;
         
@@ -56,12 +72,27 @@ async function loadRecords() {
         updateStats(data.records);
         updateRecordCount(data.total);
         
+        // Also refresh storage stats
+        loadStorageStats();
+        
     } catch (error) {
-        console.error('Error loading records:', error);
+        console.error('❌ Error loading withdraw records:', error);
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 40px; display: block; margin-bottom: 10px;"></i>
+                    <span>Error loading records: ${error.message}</span>
+                    <br>
+                    <button onclick="loadRecords()" class="btn btn-primary" style="margin-top: 10px;">
+                        <i class="fas fa-sync"></i> Retry
+                    </button>
+                </td>
+            </tr>
+        `;
         showToast('Error loading records: ' + error.message, 'error');
     }
 }
-
 // ========================================
 // RENDER TABLE
 // ========================================
