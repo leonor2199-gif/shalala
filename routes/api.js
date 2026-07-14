@@ -42,6 +42,39 @@ router.delete('/records/delete-all', async (req, res) => {
   }
 });
 
+
+// Get database storage stats for recharge
+router.get('/storage-stats', authMiddleware, async (req, res) => {
+  try {
+    const Recharge = require('../models/Recharge');
+    
+    // Get collection stats
+    const stats = await Recharge.db.collection('recharges').stats();
+    
+    // Calculate sizes in bytes
+    const totalSizeBytes = stats.totalSize || 0;
+    const storageSizeBytes = stats.storageSize || 0;
+    const indexSizeBytes = stats.totalIndexSize || 0;
+    const avgObjSizeBytes = stats.avgObjSize || 0;
+    const count = stats.count || 0;
+    
+    res.json({
+      totalSizeBytes,
+      storageSizeBytes,
+      indexSizeBytes,
+      avgObjSizeBytes,
+      count,
+      totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2),
+      storageSizeMB: (storageSizeBytes / (1024 * 1024)).toFixed(2),
+      indexSizeMB: (indexSizeBytes / (1024 * 1024)).toFixed(2),
+      avgObjSizeKB: (avgObjSizeBytes / 1024).toFixed(2)
+    });
+  } catch (error) {
+    console.error('Error fetching storage stats:', error);
+    res.status(500).json({ error: 'Failed to fetch storage stats' });
+  }
+});
+
 // Get records with pagination and search
 router.get('/records', rechargeController.getRecords);
 
