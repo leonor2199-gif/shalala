@@ -507,3 +507,82 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('searchInput').focus();
     }
 });
+
+
+// ========================================
+// LOAD STORAGE STATS
+// ========================================
+async function loadStorageStats() {
+    try {
+        const response = await fetch('/api/storage-stats');
+        if (!response.ok) {
+            throw new Error('Failed to fetch storage stats');
+        }
+        
+        const stats = await response.json();
+        
+        // Update storage display
+        const storageDisplay = document.getElementById('storageUsage');
+        const recordCountStorage = document.getElementById('recordCountStorage');
+        const avgRecordSize = document.getElementById('avgRecordSize');
+        
+        if (storageDisplay) {
+            // Show in MB with 2 decimal places
+            const totalMB = parseFloat(stats.totalSizeMB);
+            if (totalMB > 1024) {
+                storageDisplay.textContent = (totalMB / 1024).toFixed(2) + ' GB';
+            } else {
+                storageDisplay.textContent = totalMB.toFixed(2) + ' MB';
+            }
+            
+            // Add color coding based on usage
+            const storagePercent = (totalMB / 512) * 100; // 512MB is free tier limit
+            if (storagePercent > 80) {
+                storageDisplay.style.color = '#ef4444'; // Red - Critical
+            } else if (storagePercent > 60) {
+                storageDisplay.style.color = '#f59e0b'; // Orange - Warning
+            } else {
+                storageDisplay.style.color = '#22c55e'; // Green - Safe
+            }
+        }
+        
+        if (recordCountStorage) {
+            recordCountStorage.textContent = `${stats.count || 0} records`;
+        }
+        
+        if (avgRecordSize) {
+            avgRecordSize.textContent = `${stats.avgObjSizeKB || 0} KB/record`;
+        }
+        
+    } catch (error) {
+        console.error('Error loading storage stats:', error);
+        // Don't show error toast for storage stats, just use defaults
+    }
+}
+
+// Update the initialization to load storage stats
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecords();
+    loadStorageStats(); // Add this line
+    setupEventListeners();
+    
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchRecords();
+        }
+    });
+});
+
+// Also reload storage stats after any data changes (add, delete, etc.)
+// Add this to the end of loadRecords function:
+async function loadRecords() {
+    try {
+        // ... existing code ...
+        
+        // After loading records, also refresh storage stats
+        loadStorageStats();
+        
+    } catch (error) {
+        // ... error handling ...
+    }
+}
