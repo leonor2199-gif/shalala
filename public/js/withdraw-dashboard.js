@@ -11,7 +11,9 @@ let totalPages = 0;
 // INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Withdraw Dashboard initialized');
     loadRecords();
+    loadStorageStats();
     setupEventListeners();
     
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -56,23 +58,24 @@ async function loadRecords() {
         const response = await fetch(url);
         
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Response error:', response.status, errorText);
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
         console.log('✅ Withdraw records received:', data.total, 'records');
         
-        totalRecords = data.total;
-        totalPages = data.totalPages;
+        totalRecords = data.total || 0;
+        totalPages = data.totalPages || 0;
         
-        renderTable(data.records, data.page, data.total);
+        if (data.records && data.records.length > 0) {
+            renderTable(data.records, data.page, data.total);
+        } else {
+            renderEmptyTable();
+        }
+        
         renderPagination(data.page, data.totalPages);
-        updateStats(data.records);
-        updateRecordCount(data.total);
-        
-        // Also refresh storage stats
+        updateStats(data.records || []);
+        updateRecordCount(data.total || 0);
         loadStorageStats();
         
     } catch (error) {
@@ -82,9 +85,11 @@ async function loadRecords() {
             <tr>
                 <td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">
                     <i class="fas fa-exclamation-circle" style="font-size: 40px; display: block; margin-bottom: 10px;"></i>
-                    <span>Error loading records: ${error.message}</span>
+                    <span><strong>Error loading records</strong></span>
                     <br>
-                    <button onclick="loadRecords()" class="btn btn-primary" style="margin-top: 10px;">
+                    <span style="font-size: 14px; color: #666;">${error.message}</span>
+                    <br>
+                    <button onclick="loadRecords()" class="btn btn-primary" style="margin-top: 15px;">
                         <i class="fas fa-sync"></i> Retry
                     </button>
                 </td>
@@ -93,6 +98,24 @@ async function loadRecords() {
         showToast('Error loading records: ' + error.message, 'error');
     }
 }
+
+// ========================================
+// RENDER EMPTY TABLE
+// ========================================
+function renderEmptyTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                <i class="fas fa-inbox" style="font-size: 40px; display: block; margin-bottom: 10px; color: #ccc;"></i>
+                <span>No withdraw records found</span>
+                <br>
+                <span style="font-size: 14px;">Upload Excel files via Telegram bot</span>
+            </td>
+        </tr>
+    `;
+}
+
 // ========================================
 // RENDER TABLE
 // ========================================
@@ -100,14 +123,7 @@ function renderTable(records, page, total) {
     const tbody = document.getElementById('tableBody');
     
     if (!records || records.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="9" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-inbox" style="font-size: 40px; color: #ccc; display: block; margin-bottom: 10px;"></i>
-                    <span style="color: #999;">No withdraw records found</span>
-                </td>
-            </tr>
-        `;
+        renderEmptyTable();
         return;
     }
     
@@ -119,7 +135,6 @@ function renderTable(records, page, total) {
         const amountClass = record.amount >= 1000 ? 'amount-high' : 
                            record.amount >= 500 ? 'amount-medium' : 'amount-low';
         
-        // Status badge color
         let statusClass = 'status-pending';
         if (record.status === '审核通过' || record.status === '已完成') {
             statusClass = 'status-approved';
@@ -127,17 +142,17 @@ function renderTable(records, page, total) {
             statusClass = 'status-rejected';
         }
         
-        const requestTime = formatDate(record.request_time);
+        const requestTime = record.request_time ? formatDate(record.request_time) : '-';
         
         html += `
             <tr>
                 <td>${rowNumber}</td>
-                <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${escapeHtml(record.user_id)}</code></td>
-                <td><strong>${escapeHtml(record.username)}</strong></td>
-                <td class="${amountClass}">$${record.amount.toFixed(2)}</td>
+                <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${escapeHtml(record.user_id || '-')}</code></td>
+                <td><strong>${escapeHtml(record.username || '-')}</strong></td>
+                <td class="${amountClass}">$${record.amount ? record.amount.toFixed(2) : '0.00'}</td>
                 <td>${escapeHtml(record.bank_name || '-')}</td>
                 <td style="font-size: 12px;">${escapeHtml(record.bank_account || '-')}</td>
-                <td><span class="badge ${statusClass}">${escapeHtml(record.status)}</span></td>
+                <td><span class="badge ${statusClass}">${escapeHtml(record.status || '待审核')}</span></td>
                 <td>${requestTime}</td>
                 <td>
                     <div class="action-buttons">
@@ -160,17 +175,33 @@ function renderTable(records, page, total) {
 // RENDER PAGINATION
 // ========================================
 function renderPagination(currentPage, totalPages) {
-    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
     
-    document.getElementById('prevBtn').disabled = currentPage <= 1;
-    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage || 1} of ${totalPages || 1}`;
+    }
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+    }
 }
 
 // ========================================
 // UPDATE STATS
 // ========================================
 function updateStats(records) {
-    document.getElementById('totalRecords').textContent = totalRecords;
+    const totalRecordsEl = document.getElementById('totalRecords');
+    const totalAmountEl = document.getElementById('totalAmount');
+    const approvedCountEl = document.getElementById('approvedCount');
+    const pendingCountEl = document.getElementById('pendingCount');
+    
+    if (totalRecordsEl) totalRecordsEl.textContent = totalRecords;
     
     let totalAmount = 0;
     let approvedCount = 0;
@@ -187,16 +218,66 @@ function updateStats(records) {
         });
     }
     
-    document.getElementById('totalAmount').textContent = `$${totalAmount.toFixed(2)}`;
-    document.getElementById('approvedCount').textContent = approvedCount;
-    document.getElementById('pendingCount').textContent = pendingCount;
+    if (totalAmountEl) totalAmountEl.textContent = `$${totalAmount.toFixed(2)}`;
+    if (approvedCountEl) approvedCountEl.textContent = approvedCount;
+    if (pendingCountEl) pendingCountEl.textContent = pendingCount;
 }
 
 // ========================================
 // UPDATE RECORD COUNT
 // ========================================
 function updateRecordCount(total) {
-    document.getElementById('recordCount').textContent = `Showing: ${total} records`;
+    const recordCount = document.getElementById('recordCount');
+    if (recordCount) {
+        recordCount.textContent = `Showing: ${total} records`;
+    }
+}
+
+// ========================================
+// LOAD STORAGE STATS
+// ========================================
+async function loadStorageStats() {
+    try {
+        const response = await fetch('/api/withdraw/storage-stats');
+        if (!response.ok) {
+            throw new Error('Failed to fetch storage stats');
+        }
+        
+        const stats = await response.json();
+        
+        const storageDisplay = document.getElementById('storageUsage');
+        const recordCountStorage = document.getElementById('recordCountStorage');
+        const avgRecordSize = document.getElementById('avgRecordSize');
+        
+        if (storageDisplay) {
+            const totalMB = parseFloat(stats.totalSizeMB) || 0;
+            if (totalMB > 1024) {
+                storageDisplay.textContent = (totalMB / 1024).toFixed(2) + ' GB';
+            } else {
+                storageDisplay.textContent = totalMB.toFixed(2) + ' MB';
+            }
+            
+            const storagePercent = (totalMB / 512) * 100;
+            if (storagePercent > 80) {
+                storageDisplay.style.color = '#ef4444';
+            } else if (storagePercent > 60) {
+                storageDisplay.style.color = '#f59e0b';
+            } else {
+                storageDisplay.style.color = '#22c55e';
+            }
+        }
+        
+        if (recordCountStorage) {
+            recordCountStorage.textContent = `${stats.count || 0} records`;
+        }
+        
+        if (avgRecordSize) {
+            avgRecordSize.textContent = `${stats.avgObjSizeKB || 0} KB/record`;
+        }
+        
+    } catch (error) {
+        console.error('Error loading storage stats:', error);
+    }
 }
 
 // ========================================
@@ -221,10 +302,11 @@ function clearSearch() {
 function changePage(direction) {
     if (direction === 'prev' && currentPage > 1) {
         currentPage--;
+        loadRecords();
     } else if (direction === 'next' && currentPage < totalPages) {
         currentPage++;
+        loadRecords();
     }
-    loadRecords();
 }
 
 function changePageSize() {
@@ -244,10 +326,10 @@ async function openEditModal(id) {
         const record = await response.json();
         
         document.getElementById('editId').value = record._id;
-        document.getElementById('editUsername').value = record.username;
-        document.getElementById('editUserId').value = record.user_id;
-        document.getElementById('editAmount').value = record.amount;
-        document.getElementById('editStatus').value = record.status;
+        document.getElementById('editUsername').value = record.username || '';
+        document.getElementById('editUserId').value = record.user_id || '';
+        document.getElementById('editAmount').value = record.amount || 0;
+        document.getElementById('editStatus').value = record.status || '待审核';
         document.getElementById('editBank').value = record.bank_name || '';
         document.getElementById('editAccount').value = record.bank_account || '';
         
@@ -376,10 +458,7 @@ async function confirmDeleteAll() {
     
     try {
         const response = await fetch('/api/withdraw/delete-all', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            method: 'DELETE'
         });
         
         if (!response.ok) {
@@ -440,7 +519,9 @@ function showToast(message, type = 'success') {
 // UTILITY FUNCTIONS
 // ========================================
 function formatDate(dateString) {
+    if (!dateString) return '-';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
     return date.toLocaleString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -460,80 +541,6 @@ function escapeHtml(text) {
 }
 
 // ========================================
-// LOAD STORAGE STATS
-// ========================================
-async function loadStorageStats() {
-    try {
-        const response = await fetch('/api/withdraw/storage-stats');
-        if (!response.ok) {
-            throw new Error('Failed to fetch storage stats');
-        }
-        
-        const stats = await response.json();
-        
-        const storageDisplay = document.getElementById('storageUsage');
-        const recordCountStorage = document.getElementById('recordCountStorage');
-        const avgRecordSize = document.getElementById('avgRecordSize');
-        
-        if (storageDisplay) {
-            const totalMB = parseFloat(stats.totalSizeMB);
-            if (totalMB > 1024) {
-                storageDisplay.textContent = (totalMB / 1024).toFixed(2) + ' GB';
-            } else {
-                storageDisplay.textContent = totalMB.toFixed(2) + ' MB';
-            }
-            
-            // Color coding based on usage (512MB free tier limit)
-            const storagePercent = (totalMB / 512) * 100;
-            if (storagePercent > 80) {
-                storageDisplay.style.color = '#ef4444';
-            } else if (storagePercent > 60) {
-                storageDisplay.style.color = '#f59e0b';
-            } else {
-                storageDisplay.style.color = '#22c55e';
-            }
-        }
-        
-        if (recordCountStorage) {
-            recordCountStorage.textContent = `${stats.count || 0} records`;
-        }
-        
-        if (avgRecordSize) {
-            avgRecordSize.textContent = `${stats.avgObjSizeKB || 0} KB/record`;
-        }
-        
-    } catch (error) {
-        console.error('Error loading storage stats:', error);
-    }
-}
-
-// Update initialization
-document.addEventListener('DOMContentLoaded', function() {
-    loadRecords();
-    loadStorageStats(); // Add this
-    setupEventListeners();
-    
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchRecords();
-        }
-    });
-});
-
-// Add to loadRecords function
-async function loadRecords() {
-    try {
-        // ... existing code ...
-        
-        // After loading records, refresh storage stats
-        loadStorageStats();
-        
-    } catch (error) {
-        // ... error handling ...
-    }
-}
-
-// ========================================
 // KEYBOARD SHORTCUTS
 // ========================================
 document.addEventListener('keydown', function(e) {
@@ -548,3 +555,5 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('searchInput').focus();
     }
 });
+
+console.log('✅ Withdraw Dashboard JavaScript loaded successfully');
