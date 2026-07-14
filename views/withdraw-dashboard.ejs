@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Withdraw Dashboard' %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Same header as recharge dashboard -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <i class="fas fa-money-bill-wave header-icon" style="color: #8b5cf6;"></i>
+                    <h1>💳 Withdraw Records</h1>
+                </div>
+                <div class="header-right">
+                    <span class="user-badge">
+                        <i class="fas fa-user"></i>
+                        <%= user || 'Admin' %>
+                    </span>
+                    <a href="/dashboard" class="btn btn-info btn-sm">
+                        <i class="fas fa-arrow-left"></i> Recharges
+                    </a>
+                    <a href="/logout" class="btn btn-danger btn-sm">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Rest of the dashboard similar to recharge -->
+        <!-- ... (copy from recharge dashboard and adapt) ... -->
+    </div>
+    <script src="/js/withdraw-dashboard.js"></script>
+</body>
+</html>
