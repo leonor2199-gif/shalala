@@ -24,28 +24,60 @@ router.delete('/delete-all', authMiddleware, async (req, res) => {
 });
 
 // ========================================
-// GET RECORDS WITH PAGINATION AND SEARCH
+// GET RECORDS WITH PAGINATION, SEARCH, AND DATE FILTER
 // ========================================
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { search = '', page = 1, limit = 20 } = req.query;
+    const { search = '', page = 1, limit = 20, startDate = '', endDate = '' } = req.query;
     
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
     
     let query = {};
+    let searchConditions = [];
+    
+    // Text search
     if (search.trim()) {
+      searchConditions = [
+        { username: { $regex: search, $options: 'i' } },
+        { user_id: { $regex: search, $options: 'i' } },
+        { bank_name: { $regex: search, $options: 'i' } },
+        { bank_holder: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Date range filter
+    let dateQuery = {};
+    if (startDate || endDate) {
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        dateQuery.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery.$lte = end;
+      }
+    }
+    
+    // Combine queries
+    if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
       query = {
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { user_id: { $regex: search, $options: 'i' } },
-          { bank_name: { $regex: search, $options: 'i' } },
-          { bank_holder: { $regex: search, $options: 'i' } }
+        $and: [
+          { $or: searchConditions },
+          { request_time: dateQuery }
         ]
       };
+    } else if (searchConditions.length > 0) {
+      query = { $or: searchConditions };
+    } else if (Object.keys(dateQuery).length > 0) {
+      query = { request_time: dateQuery };
     }
+    
+    console.log('🔍 Withdraw Query:', JSON.stringify(query));
     
     const total = await Withdraw.countDocuments(query);
     const records = await Withdraw.find(query)
@@ -65,54 +97,49 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Get database storage stats for withdraw
-router.get('/storage-stats', authMiddleware, async (req, res) => {
-  try {
-    const Withdraw = require('../models/Withdraw');
-    
-    // Get collection stats
-    const stats = await Withdraw.db.collection('withdraws').stats();
-    
-    // Calculate sizes in bytes
-    const totalSizeBytes = stats.totalSize || 0;
-    const storageSizeBytes = stats.storageSize || 0;
-    const indexSizeBytes = stats.totalIndexSize || 0;
-    const avgObjSizeBytes = stats.avgObjSize || 0;
-    const count = stats.count || 0;
-    
-    res.json({
-      totalSizeBytes,
-      storageSizeBytes,
-      indexSizeBytes,
-      avgObjSizeBytes,
-      count,
-      totalSizeMB: (totalSizeBytes / (1024 * 1024)).toFixed(2),
-      storageSizeMB: (storageSizeBytes / (1024 * 1024)).toFixed(2),
-      indexSizeMB: (indexSizeBytes / (1024 * 1024)).toFixed(2),
-      avgObjSizeKB: (avgObjSizeBytes / 1024).toFixed(2)
-    });
-  } catch (error) {
-    console.error('Error fetching withdraw storage stats:', error);
-    res.status(500).json({ error: 'Failed to fetch storage stats' });
-  }
-});
-
 // ========================================
-// EXPORT RECORDS
+// EXPORT RECORDS WITH FILTERS
 // ========================================
 
 router.get('/export', authMiddleware, async (req, res) => {
   try {
-    const { search = '' } = req.query;
+    const { search = '', startDate = '', endDate = '' } = req.query;
     
     let query = {};
+    let searchConditions = [];
+    
     if (search.trim()) {
+      searchConditions = [
+        { username: { $regex: search, $options: 'i' } },
+        { user_id: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    let dateQuery = {};
+    if (startDate || endDate) {
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        dateQuery.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery.$lte = end;
+      }
+    }
+    
+    if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
       query = {
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { user_id: { $regex: search, $options: 'i' } }
+        $and: [
+          { $or: searchConditions },
+          { request_time: dateQuery }
         ]
       };
+    } else if (searchConditions.length > 0) {
+      query = { $or: searchConditions };
+    } else if (Object.keys(dateQuery).length > 0) {
+      query = { request_time: dateQuery };
     }
     
     const records = await Withdraw.find(query).sort({ request_time: -1 });
@@ -130,6 +157,30 @@ router.get('/export', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error exporting withdraw records:', error);
     res.status(500).json({ error: 'Failed to export withdraw records' });
+  }
+});
+
+// ========================================
+// GET STORAGE STATS
+// ========================================
+
+router.get('/storage-stats', authMiddleware, async (req, res) => {
+  try {
+    const stats = await Withdraw.db.collection('withdraws').stats();
+    res.json({
+      totalSizeBytes: stats.totalSize || 0,
+      storageSizeBytes: stats.storageSize || 0,
+      indexSizeBytes: stats.totalIndexSize || 0,
+      avgObjSizeBytes: stats.avgObjSize || 0,
+      count: stats.count || 0,
+      totalSizeMB: ((stats.totalSize || 0) / (1024 * 1024)).toFixed(2),
+      storageSizeMB: ((stats.storageSize || 0) / (1024 * 1024)).toFixed(2),
+      indexSizeMB: ((stats.totalIndexSize || 0) / (1024 * 1024)).toFixed(2),
+      avgObjSizeKB: ((stats.avgObjSize || 0) / 1024).toFixed(2)
+    });
+  } catch (error) {
+    console.error('Error fetching withdraw storage stats:', error);
+    res.status(500).json({ error: 'Failed to fetch storage stats' });
   }
 });
 
