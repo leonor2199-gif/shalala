@@ -1,4 +1,4 @@
-// Add to your Render backend - user-api.js
+// user-api.js
 const express = require('express');
 const router = express.Router();
 const Recharge = require('../models/Recharge');
@@ -8,6 +8,7 @@ const Withdraw = require('../models/Withdraw');
 router.get('/users/verify/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
+    console.log(`🔍 Verifying user: ${userId}`);
     
     // Check in both collections
     const [rechargeUser, withdrawUser] = await Promise.all([
@@ -16,6 +17,8 @@ router.get('/users/verify/:userId', async (req, res) => {
     ]);
     
     const user = rechargeUser || withdrawUser;
+    
+    console.log(`✅ User found: ${!!user}`);
     
     res.json({
       exists: !!user,
@@ -32,24 +35,18 @@ router.get('/users/verify/:userId', async (req, res) => {
 router.get('/users/:userId/recharges', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const { page = 1, limit = 50 } = req.query;
-    
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
+    console.log(`📊 Fetching recharges for: ${userId}`);
     
     const query = { user_id: userId };
-    const total = await Recharge.countDocuments(query);
     const records = await Recharge.find(query)
       .sort({ request_time: -1 })
-      .skip(skip)
-      .limit(limitNum);
+      .limit(100);
+    
+    console.log(`✅ Found ${records.length} recharges`);
     
     res.json({
       records,
-      total,
-      page: pageNum,
-      totalPages: Math.ceil(total / limitNum)
+      total: records.length
     });
     
   } catch (error) {
@@ -62,24 +59,18 @@ router.get('/users/:userId/recharges', async (req, res) => {
 router.get('/users/:userId/withdraws', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const { page = 1, limit = 50 } = req.query;
-    
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
+    console.log(`📊 Fetching withdraws for: ${userId}`);
     
     const query = { user_id: userId };
-    const total = await Withdraw.countDocuments(query);
     const records = await Withdraw.find(query)
       .sort({ request_time: -1 })
-      .skip(skip)
-      .limit(limitNum);
+      .limit(100);
+    
+    console.log(`✅ Found ${records.length} withdraws`);
     
     res.json({
       records,
-      total,
-      page: pageNum,
-      totalPages: Math.ceil(total / limitNum)
+      total: records.length
     });
     
   } catch (error) {
