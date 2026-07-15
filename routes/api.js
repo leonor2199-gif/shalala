@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const userApi = require('./user-api');
 const { authMiddleware } = require('../middleware/auth');
 const rechargeController = require('../controllers/rechargeController');
 const { uploadFile } = require('../controllers/uploadController');
 const Recharge = require('../models/Recharge');
+const userApi = require('./user-api'); // Import user API
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -22,8 +22,15 @@ const upload = multer({
   }
 });
 
-// Apply authentication to all API routes
-router.use(authMiddleware);
+// ========================================
+// USER API ROUTES - NO AUTHENTICATION REQUIRED
+// ========================================
+router.use('/', userApi); // User routes (no auth)
+
+// ========================================
+// ADMIN API ROUTES - AUTHENTICATION REQUIRED
+// ========================================
+router.use(authMiddleware); // Apply authentication to ALL routes below
 
 // ========================================
 // SPECIFIC ROUTES FIRST (No parameters)
@@ -200,7 +207,6 @@ router.get('/storage-stats', authMiddleware, async (req, res) => {
 // ========================================
 // PARAMETERIZED ROUTES (With :id)
 // ========================================
-router.use('/', userApi);
 
 // Get single record by ID
 router.get('/records/:id', authMiddleware, rechargeController.getRecord);
