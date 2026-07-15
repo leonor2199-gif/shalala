@@ -11,6 +11,7 @@ const Withdraw = require('../models/Withdraw');
 function translateStatus(status) {
   const statusMap = {
     '待审核': 'Pendiente de Revisión',
+    '审核通过': 'Aprobado',           // ✅ Added this
     '已完成': 'Completado',
     '已拒绝': 'Rechazado',
     '处理中': 'En Proceso',
@@ -22,7 +23,9 @@ function translateStatus(status) {
     '已确认': 'Confirmado',
     '已失败': 'Fallido',
     '成功': 'Exitoso',
-    '失败': 'Fallido'
+    '失败': 'Fallido',
+    '通过': 'Aprobado',              // Added just in case
+    '拒绝': 'Rechazado'              // Added just in case
   };
   
   return statusMap[status] || status || 'Desconocido';
@@ -32,6 +35,7 @@ function translateStatus(status) {
 function getStatusColor(status) {
   const colorMap = {
     '待审核': 'bg-yellow-100 text-yellow-800',
+    '审核通过': 'bg-green-100 text-green-800',  // ✅ Added this
     '已完成': 'bg-green-100 text-green-800',
     '已拒绝': 'bg-red-100 text-red-800',
     '处理中': 'bg-blue-100 text-blue-800',
@@ -43,7 +47,9 @@ function getStatusColor(status) {
     '已确认': 'bg-green-100 text-green-800',
     '已失败': 'bg-red-100 text-red-800',
     '成功': 'bg-green-100 text-green-800',
-    '失败': 'bg-red-100 text-red-800'
+    '失败': 'bg-red-100 text-red-800',
+    '通过': 'bg-green-100 text-green-800',     // Added just in case
+    '拒绝': 'bg-red-100 text-red-800'          // Added just in case
   };
   
   return colorMap[status] || 'bg-gray-100 text-gray-800';
@@ -274,6 +280,7 @@ router.get('/status-translations', async (req, res) => {
   try {
     const statusMap = {
       '待审核': 'Pendiente de Revisión',
+      '审核通过': 'Aprobado',           // ✅ Added this
       '已完成': 'Completado',
       '已拒绝': 'Rechazado',
       '处理中': 'En Proceso',
@@ -285,26 +292,33 @@ router.get('/status-translations', async (req, res) => {
       '已确认': 'Confirmado',
       '已失败': 'Fallido',
       '成功': 'Exitoso',
-      '失败': 'Fallido'
+      '失败': 'Fallido',
+      '通过': 'Aprobado',              // Added just in case
+      '拒绝': 'Rechazado'              // Added just in case
+    };
+    
+    const colorMap = {
+      '待审核': 'bg-yellow-100 text-yellow-800',
+      '审核通过': 'bg-green-100 text-green-800',  // ✅ Added this
+      '已完成': 'bg-green-100 text-green-800',
+      '已拒绝': 'bg-red-100 text-red-800',
+      '处理中': 'bg-blue-100 text-blue-800',
+      '审核中': 'bg-purple-100 text-purple-800',
+      '已通过': 'bg-green-100 text-green-800',
+      '已取消': 'bg-gray-100 text-gray-800',
+      '待处理': 'bg-orange-100 text-orange-800',
+      '待确认': 'bg-yellow-100 text-yellow-800',
+      '已确认': 'bg-green-100 text-green-800',
+      '已失败': 'bg-red-100 text-red-800',
+      '成功': 'bg-green-100 text-green-800',
+      '失败': 'bg-red-100 text-red-800',
+      '通过': 'bg-green-100 text-green-800',
+      '拒绝': 'bg-red-100 text-red-800'
     };
     
     res.json({
       translations: statusMap,
-      colors: {
-        '待审核': 'bg-yellow-100 text-yellow-800',
-        '已完成': 'bg-green-100 text-green-800',
-        '已拒绝': 'bg-red-100 text-red-800',
-        '处理中': 'bg-blue-100 text-blue-800',
-        '审核中': 'bg-purple-100 text-purple-800',
-        '已通过': 'bg-green-100 text-green-800',
-        '已取消': 'bg-gray-100 text-gray-800',
-        '待处理': 'bg-orange-100 text-orange-800',
-        '待确认': 'bg-yellow-100 text-yellow-800',
-        '已确认': 'bg-green-100 text-green-800',
-        '已失败': 'bg-red-100 text-red-800',
-        '成功': 'bg-green-100 text-green-800',
-        '失败': 'bg-red-100 text-red-800'
-      }
+      colors: colorMap
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
