@@ -75,4 +75,35 @@ router.get('/users/verify/:userId', async (req, res) => {
   }
 });
 
+// checking status 
+router.get('/debug/withdraw-sample', async (req, res) => {
+  try {
+    // Get one sample record
+    const sample = await Withdraw.findOne({});
+    
+    if (!sample) {
+      return res.json({ 
+        message: 'No withdraw records found in database',
+        totalRecords: await Withdraw.countDocuments()
+      });
+    }
+    
+    const obj = sample.toObject ? sample.toObject() : sample;
+    
+    res.json({
+      totalRecords: await Withdraw.countDocuments(),
+      sampleFields: Object.keys(obj),
+      sampleData: obj,
+      // Check specifically for user ID fields
+      userIdFields: Object.keys(obj).filter(f => 
+        f.toLowerCase().includes('user') || 
+        f.toLowerCase().includes('id') ||
+        f.toLowerCase().includes('uid')
+      )
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
