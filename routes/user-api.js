@@ -37,7 +37,7 @@ router.get('/debug/withdraw-sample', async (req, res) => {
 });
 
 // ========================================
-// USER VERIFICATION
+// USER VERIFICATION - Check both collections
 // ========================================
 
 router.get('/users/verify/:userId', async (req, res) => {
@@ -45,19 +45,23 @@ router.get('/users/verify/:userId', async (req, res) => {
     const userId = req.params.userId;
     console.log(`🔍 Verifying user: ${userId}`);
     
-    // Search by username field (where the actual ID is stored)
+    // Check recharge by user_id, check withdraw by username (since they're swapped)
     const [rechargeUser, withdrawUser] = await Promise.all([
-      Recharge.findOne({ username: userId }),
-      Withdraw.findOne({ username: userId })
+      Recharge.findOne({ user_id: userId }),        // Recharge uses user_id correctly
+      Withdraw.findOne({ username: userId })        // Withdraw stores ID in username
     ]);
     
     const user = rechargeUser || withdrawUser;
     
     console.log(`✅ User found: ${!!user}`);
+    if (user) {
+      console.log(`📝 Found in: ${rechargeUser ? 'Recharge' : 'Withdraw'}`);
+    }
     
     res.json({
       exists: !!user,
-      username: user?.username || null
+      username: user?.username || null,
+      foundIn: rechargeUser ? 'recharge' : (withdrawUser ? 'withdraw' : null)
     });
     
   } catch (error) {
@@ -67,17 +71,17 @@ router.get('/users/verify/:userId', async (req, res) => {
 });
 
 // ========================================
-// USER RECHARGE RECORDS
+// USER RECHARGE RECORDS - Use user_id
 // ========================================
 
 router.get('/users/:userId/recharges', async (req, res) => {
   try {
     const userId = req.params.userId;
-    console.log(`📊 Fetching recharges for: ${userId}`);
+    console.log(`📊 Fetching recharges for user: ${userId}`);
     
-    // Search by username field
+    // Recharge uses user_id correctly
     const records = await Recharge.find({ 
-      username: userId 
+      user_id: userId 
     }).sort({ request_time: -1 }).limit(100);
     
     console.log(`✅ Found ${records.length} recharges for user ${userId}`);
@@ -94,7 +98,7 @@ router.get('/users/:userId/recharges', async (req, res) => {
 });
 
 // ========================================
-// USER WITHDRAW RECORDS
+// USER WITHDRAW RECORDS - Use username
 // ========================================
 
 router.get('/users/:userId/withdraws', async (req, res) => {
@@ -102,12 +106,28 @@ router.get('/users/:userId/withdraws', async (req, res) => {
     const userId = req.params.userId;
     console.log(`📊 Fetching withdraws for user: ${userId}`);
     
-    // Search by username field (where the actual ID is stored)
+    // Withdraw stores the actual ID in username field (swapped)
     const records = await Withdraw.find({ 
       username: userId 
     }).sort({ request_time: -1 }).limit(100);
     
     console.log(`✅ Found ${records.length} withdraws for user ${userId}`);
+    
+    // If no records found, also try user_id as fallback
+    if (records.length === 0) {
+      console.log(`⚠️ No records found with username, trying user_id as fallback`);
+      const fallbackRecords = await Withdraw.find({ 
+        user_id: userId 
+      }).sort({ request_time: -1 }).limit(100);
+      
+      if (fallbackRecords.length > 0) {
+        console.log(`✅ Found ${fallbackRecords.length} withdraws using user_id fallback`);
+        return res.json({
+          records: fallbackRecords,
+          total: fallbackRecords.length
+        });
+      }
+    }
     
     res.json({
       records,
@@ -116,6 +136,37 @@ router.get('/users/:userId/withdraws', async (req, res) => {
     
   } catch (error) {
     console.error('Error fetching user withdraws:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ========================================
+// OPTIONAL: Get both recharge and withdraw in one call
+// ========================================
+
+router.get('/users/:userId/all-records', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    console.log(`📊 Fetching all records for user: ${userId}`);
+    
+    const [recharges, withdraws] = await Promise.all([
+      Recharge.find({ user_id: userId }).sort({ request_time: -1 }).limit(100),
+      Withdraw.find({ username: userId }).sort({ request_time: -1 }).limit(100)
+    ]);
+    
+    console.log(`✅ Found ${recharges.length} recharges and ${withdraws.length} withdraws`);
+    
+    res.json({
+      recharges,
+      withdraws,
+      totals: {
+        recharges: recharges.length,
+        withdraws: withdraws.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user records:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
