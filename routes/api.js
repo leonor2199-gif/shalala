@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const userApi = require('./user-api');
 const { authMiddleware } = require('../middleware/auth');
 const rechargeController = require('../controllers/rechargeController');
 const { uploadFile } = require('../controllers/uploadController');
@@ -199,6 +200,7 @@ router.get('/storage-stats', authMiddleware, async (req, res) => {
 // ========================================
 // PARAMETERIZED ROUTES (With :id)
 // ========================================
+router.use('/', userApi);
 
 // Get single record by ID
 router.get('/records/:id', authMiddleware, rechargeController.getRecord);
