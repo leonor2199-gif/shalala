@@ -1,68 +1,59 @@
-// user-api.js - This file should NOT use authMiddleware
 const express = require('express');
 const router = express.Router();
-const Withdraw = require('../models/Withdraw');
 const Recharge = require('../models/Recharge');
+const Withdraw = require('../models/Withdraw');
 
-// Get user's withdraw records - PUBLIC endpoint
-router.get('/users/:userId/withdraws', async (req, res) => {
+// ========================================
+// DEBUG ENDPOINT - Check collection structure
+// ========================================
+
+router.get('/debug/withdraw-sample', async (req, res) => {
   try {
-    const userId = req.params.userId;
-    console.log(`📊 Fetching withdraws for user: ${userId}`);
+    const totalRecords = await Withdraw.countDocuments();
+    const sample = await Withdraw.findOne({});
     
-    // Query the database directly
-    const records = await Withdraw.find({ 
-      user_id: userId  // Make sure this matches your schema field name
-    }).sort({ request_time: -1 });
+    if (!sample) {
+      return res.json({ 
+        message: 'No withdraw records found in database',
+        totalRecords: totalRecords
+      });
+    }
     
-    console.log(`✅ Found ${records.length} withdraw records`);
+    const obj = sample.toObject ? sample.toObject() : sample;
     
     res.json({
-      records: records,
-      total: records.length
+      totalRecords: totalRecords,
+      sampleFields: Object.keys(obj),
+      sampleData: obj,
+      userIdFields: Object.keys(obj).filter(f => 
+        f.toLowerCase().includes('user') || 
+        f.toLowerCase().includes('id') ||
+        f.toLowerCase().includes('uid')
+      )
     });
-    
   } catch (error) {
-    console.error('Error fetching user withdraws:', error);
-    res.status(500).json({ error: 'Failed to fetch withdraw records' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get user's recharge records - PUBLIC endpoint
-router.get('/users/:userId/recharges', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    console.log(`📊 Fetching recharges for user: ${userId}`);
-    
-    const records = await Recharge.find({ 
-      user_id: userId 
-    }).sort({ request_time: -1 });
-    
-    console.log(`✅ Found ${records.length} recharge records`);
-    
-    res.json({
-      records: records,
-      total: records.length
-    });
-    
-  } catch (error) {
-    console.error('Error fetching user recharges:', error);
-    res.status(500).json({ error: 'Failed to fetch recharge records' });
-  }
-});
+// ========================================
+// USER VERIFICATION
+// ========================================
 
-// Verify user exists - PUBLIC endpoint
 router.get('/users/verify/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
     console.log(`🔍 Verifying user: ${userId}`);
     
+    // Search by username field (where the actual ID is stored)
     const [rechargeUser, withdrawUser] = await Promise.all([
-      Recharge.findOne({ user_id: userId }),
-      Withdraw.findOne({ user_id: userId })
+      Recharge.findOne({ username: userId }),
+      Withdraw.findOne({ username: userId })
     ]);
     
     const user = rechargeUser || withdrawUser;
+    
+    console.log(`✅ User found: ${!!user}`);
     
     res.json({
       exists: !!user,
@@ -75,34 +66,57 @@ router.get('/users/verify/:userId', async (req, res) => {
   }
 });
 
-// checking status 
-router.get('/debug/withdraw-sample', async (req, res) => {
+// ========================================
+// USER RECHARGE RECORDS
+// ========================================
+
+router.get('/users/:userId/recharges', async (req, res) => {
   try {
-    // Get one sample record
-    const sample = await Withdraw.findOne({});
+    const userId = req.params.userId;
+    console.log(`📊 Fetching recharges for: ${userId}`);
     
-    if (!sample) {
-      return res.json({ 
-        message: 'No withdraw records found in database',
-        totalRecords: await Withdraw.countDocuments()
-      });
-    }
+    // Search by username field
+    const records = await Recharge.find({ 
+      username: userId 
+    }).sort({ request_time: -1 }).limit(100);
     
-    const obj = sample.toObject ? sample.toObject() : sample;
+    console.log(`✅ Found ${records.length} recharges for user ${userId}`);
     
     res.json({
-      totalRecords: await Withdraw.countDocuments(),
-      sampleFields: Object.keys(obj),
-      sampleData: obj,
-      // Check specifically for user ID fields
-      userIdFields: Object.keys(obj).filter(f => 
-        f.toLowerCase().includes('user') || 
-        f.toLowerCase().includes('id') ||
-        f.toLowerCase().includes('uid')
-      )
+      records,
+      total: records.length
     });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching user recharges:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ========================================
+// USER WITHDRAW RECORDS
+// ========================================
+
+router.get('/users/:userId/withdraws', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    console.log(`📊 Fetching withdraws for user: ${userId}`);
+    
+    // Search by username field (where the actual ID is stored)
+    const records = await Withdraw.find({ 
+      username: userId 
+    }).sort({ request_time: -1 }).limit(100);
+    
+    console.log(`✅ Found ${records.length} withdraws for user ${userId}`);
+    
+    res.json({
+      records,
+      total: records.length
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user withdraws:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
