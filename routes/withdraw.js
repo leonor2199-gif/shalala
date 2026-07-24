@@ -4,10 +4,10 @@ const Withdraw = require('../models/Withdraw');
 const { authMiddleware } = require('../middleware/auth');
 
 // ========================================
-// DELETE ALL - MUST COME BEFORE /:id
+// IMPORTANT: SPECIFIC ROUTES MUST COME BEFORE :id PARAM ROUTES
 // ========================================
 
-// Delete all withdraw records
+// DELETE ALL - Must come before /:id
 router.delete('/delete-all', authMiddleware, async (req, res) => {
   console.log('🗑️ Delete all withdraw records requested');
   try {
@@ -24,9 +24,31 @@ router.delete('/delete-all', authMiddleware, async (req, res) => {
 });
 
 // ========================================
-// GET RECORDS WITH PAGINATION, SEARCH, AND DATE FILTER
+// GET STORAGE STATS - MUST COME BEFORE /:id
 // ========================================
+router.get('/storage-stats', authMiddleware, async (req, res) => {
+  try {
+    const stats = await Withdraw.db.collection('withdraws').stats();
+    res.json({
+      totalSizeBytes: stats.totalSize || 0,
+      storageSizeBytes: stats.storageSize || 0,
+      indexSizeBytes: stats.totalIndexSize || 0,
+      avgObjSizeBytes: stats.avgObjSize || 0,
+      count: stats.count || 0,
+      totalSizeMB: ((stats.totalSize || 0) / (1024 * 1024)).toFixed(2),
+      storageSizeMB: ((stats.storageSize || 0) / (1024 * 1024)).toFixed(2),
+      indexSizeMB: ((stats.totalIndexSize || 0) / (1024 * 1024)).toFixed(2),
+      avgObjSizeKB: ((stats.avgObjSize || 0) / 1024).toFixed(2)
+    });
+  } catch (error) {
+    console.error('Error fetching withdraw storage stats:', error);
+    res.status(500).json({ error: 'Failed to fetch storage stats' });
+  }
+});
 
+// ========================================
+// GET RECORDS WITH PAGINATION
+// ========================================
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { search = '', page = 1, limit = 20, startDate = '', endDate = '' } = req.query;
@@ -38,7 +60,6 @@ router.get('/', authMiddleware, async (req, res) => {
     let query = {};
     let searchConditions = [];
     
-    // Text search
     if (search.trim()) {
       searchConditions = [
         { username: { $regex: search, $options: 'i' } },
@@ -48,7 +69,6 @@ router.get('/', authMiddleware, async (req, res) => {
       ];
     }
     
-    // Date range filter
     let dateQuery = {};
     if (startDate || endDate) {
       if (startDate) {
@@ -63,7 +83,6 @@ router.get('/', authMiddleware, async (req, res) => {
       }
     }
     
-    // Combine queries
     if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
       query = {
         $and: [
@@ -98,9 +117,8 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // ========================================
-// EXPORT RECORDS WITH FILTERS
+// EXPORT RECORDS AS CSV - MUST COME BEFORE /:id
 // ========================================
-
 router.get('/export', authMiddleware, async (req, res) => {
   try {
     const { search = '', startDate = '', endDate = '' } = req.query;
@@ -161,35 +179,17 @@ router.get('/export', authMiddleware, async (req, res) => {
 });
 
 // ========================================
-// GET STORAGE STATS
+// PARAMETERIZED ROUTES (with :id) - MUST COME LAST
 // ========================================
 
-router.get('/storage-stats', authMiddleware, async (req, res) => {
-  try {
-    const stats = await Withdraw.db.collection('withdraws').stats();
-    res.json({
-      totalSizeBytes: stats.totalSize || 0,
-      storageSizeBytes: stats.storageSize || 0,
-      indexSizeBytes: stats.totalIndexSize || 0,
-      avgObjSizeBytes: stats.avgObjSize || 0,
-      count: stats.count || 0,
-      totalSizeMB: ((stats.totalSize || 0) / (1024 * 1024)).toFixed(2),
-      storageSizeMB: ((stats.storageSize || 0) / (1024 * 1024)).toFixed(2),
-      indexSizeMB: ((stats.totalIndexSize || 0) / (1024 * 1024)).toFixed(2),
-      avgObjSizeKB: ((stats.avgObjSize || 0) / 1024).toFixed(2)
-    });
-  } catch (error) {
-    console.error('Error fetching withdraw storage stats:', error);
-    res.status(500).json({ error: 'Failed to fetch storage stats' });
-  }
-});
-
-// ========================================
-// GET SINGLE RECORD
-// ========================================
-
+// GET SINGLE RECORD BY ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
     const record = await Withdraw.findById(req.params.id);
     if (!record) {
       return res.status(404).json({ error: 'Record not found' });
@@ -201,12 +201,14 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// ========================================
-// UPDATE RECORD
-// ========================================
-
+// UPDATE RECORD BY ID
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
     const { username, user_id, amount, status, bank_name, bank_account } = req.body;
     
     const record = await Withdraw.findById(req.params.id);
@@ -233,12 +235,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// ========================================
-// DELETE SINGLE RECORD
-// ========================================
-
+// DELETE SINGLE RECORD BY ID
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
     const record = await Withdraw.findByIdAndDelete(req.params.id);
     if (!record) {
       return res.status(404).json({ error: 'Record not found' });
