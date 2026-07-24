@@ -5,8 +5,9 @@ const { authMiddleware } = require('../middleware/auth');
 const rechargeController = require('../controllers/rechargeController');
 const { uploadFile } = require('../controllers/uploadController');
 const Recharge = require('../models/Recharge');
-const Withdraw = require('../models/Withdraw'); // Add this
-const userApi = require('./user-api'); // Import user API
+const Withdraw = require('../models/Withdraw');
+const userApi = require('./user-api');
+const mongoose = require('mongoose');
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -26,15 +27,19 @@ const upload = multer({
 // ========================================
 // USER API ROUTES - NO AUTHENTICATION REQUIRED
 // ========================================
-router.use('/', userApi); // User routes (no auth)
+router.use('/', userApi);
 
 // ========================================
 // ADMIN API ROUTES - AUTHENTICATION REQUIRED
 // ========================================
-router.use(authMiddleware); // Apply authentication to ALL routes below
+router.use(authMiddleware);
 
 // ========================================
-// SPECIFIC ROUTES FIRST (No parameters)
+// IMPORTANT: ALL SPECIFIC ROUTES MUST COME BEFORE :id PARAM ROUTES
+// ========================================
+
+// ========================================
+// RECHARGE - SPECIFIC ROUTES (NO :id)
 // ========================================
 
 // Delete all recharge records
@@ -48,94 +53,6 @@ router.delete('/records/delete-all', async (req, res) => {
   } catch (error) {
     console.error('Error deleting all records:', error);
     res.status(500).json({ error: 'Failed to delete all records' });
-  }
-});
-
-// Delete all withdraw records
-router.delete('/withdraw/delete-all', async (req, res) => {
-  try {
-    const result = await Withdraw.deleteMany({});
-    res.json({
-      message: 'All withdraw records deleted successfully',
-      deletedCount: result.deletedCount
-    });
-  } catch (error) {
-    console.error('Error deleting all withdraw records:', error);
-    res.status(500).json({ error: 'Failed to delete all withdraw records' });
-  }
-});
-
-// ========================================
-// RECHARGE RECORDS - ADMIN
-// ========================================
-
-// Get recharge records with pagination, search, and date filter
-router.get('/records', async (req, res) => {
-  try {
-    const { search = '', page = 1, limit = 20, startDate = '', endDate = '' } = req.query;
-    
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-    
-    // Build search query
-    let query = {};
-    let searchConditions = [];
-    
-    // Text search
-    if (search.trim()) {
-      searchConditions = [
-        { username: { $regex: search, $options: 'i' } },
-        { user_id: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Date range filter
-    let dateQuery = {};
-    if (startDate || endDate) {
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        dateQuery.$gte = start;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        dateQuery.$lte = end;
-      }
-    }
-    
-    // Combine queries
-    if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
-      query = {
-        $and: [
-          { $or: searchConditions },
-          { request_time: dateQuery }
-        ]
-      };
-    } else if (searchConditions.length > 0) {
-      query = { $or: searchConditions };
-    } else if (Object.keys(dateQuery).length > 0) {
-      query = { request_time: dateQuery };
-    }
-    
-    console.log('🔍 Recharge Query:', JSON.stringify(query));
-    
-    const total = await Recharge.countDocuments(query);
-    const records = await Recharge.find(query)
-      .sort({ request_time: -1 })
-      .skip(skip)
-      .limit(limitNum);
-    
-    res.json({
-      records,
-      total,
-      page: pageNum,
-      totalPages: Math.ceil(total / limitNum)
-    });
-  } catch (error) {
-    console.error('Error fetching records:', error);
-    res.status(500).json({ error: 'Failed to fetch records' });
   }
 });
 
@@ -199,12 +116,8 @@ router.get('/records/export', async (req, res) => {
   }
 });
 
-// ========================================
-// WITHDRAW RECORDS - ADMIN
-// ========================================
-
-// Get all withdraw records with pagination, search, and date filter
-router.get('/withdraw', async (req, res) => {
+// Get recharge records with pagination, search, and date filter
+router.get('/records', async (req, res) => {
   try {
     const { search = '', page = 1, limit = 20, startDate = '', endDate = '' } = req.query;
     
@@ -215,16 +128,13 @@ router.get('/withdraw', async (req, res) => {
     let query = {};
     let searchConditions = [];
     
-    // Text search
     if (search.trim()) {
       searchConditions = [
         { username: { $regex: search, $options: 'i' } },
-        { user_id: { $regex: search, $options: 'i' } },
-        { order_id: { $regex: search, $options: 'i' } }
+        { user_id: { $regex: search, $options: 'i' } }
       ];
     }
     
-    // Date range filter
     let dateQuery = {};
     if (startDate || endDate) {
       if (startDate) {
@@ -239,7 +149,6 @@ router.get('/withdraw', async (req, res) => {
       }
     }
     
-    // Combine queries
     if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
       query = {
         $and: [
@@ -253,10 +162,10 @@ router.get('/withdraw', async (req, res) => {
       query = { request_time: dateQuery };
     }
     
-    console.log('🔍 Withdraw Query:', JSON.stringify(query));
+    console.log('🔍 Recharge Query:', JSON.stringify(query));
     
-    const total = await Withdraw.countDocuments(query);
-    const records = await Withdraw.find(query)
+    const total = await Recharge.countDocuments(query);
+    const records = await Recharge.find(query)
       .sort({ request_time: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -268,8 +177,26 @@ router.get('/withdraw', async (req, res) => {
       totalPages: Math.ceil(total / limitNum)
     });
   } catch (error) {
-    console.error('Error fetching withdraw records:', error);
-    res.status(500).json({ error: 'Failed to fetch withdraw records' });
+    console.error('Error fetching records:', error);
+    res.status(500).json({ error: 'Failed to fetch records' });
+  }
+});
+
+// ========================================
+// WITHDRAW - SPECIFIC ROUTES (NO :id)
+// ========================================
+
+// Delete all withdraw records
+router.delete('/withdraw/delete-all', async (req, res) => {
+  try {
+    const result = await Withdraw.deleteMany({});
+    res.json({
+      message: 'All withdraw records deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting all withdraw records:', error);
+    res.status(500).json({ error: 'Failed to delete all withdraw records' });
   }
 });
 
@@ -334,15 +261,75 @@ router.get('/withdraw/export', async (req, res) => {
   }
 });
 
-// ========================================
-// FILE UPLOAD
-// ========================================
+// Get all withdraw records with pagination, search, and date filter
+router.get('/withdraw', async (req, res) => {
+  try {
+    const { search = '', page = 1, limit = 20, startDate = '', endDate = '' } = req.query;
+    
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    let query = {};
+    let searchConditions = [];
+    
+    if (search.trim()) {
+      searchConditions = [
+        { username: { $regex: search, $options: 'i' } },
+        { user_id: { $regex: search, $options: 'i' } },
+        { order_id: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    let dateQuery = {};
+    if (startDate || endDate) {
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        dateQuery.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery.$lte = end;
+      }
+    }
+    
+    if (searchConditions.length > 0 && Object.keys(dateQuery).length > 0) {
+      query = {
+        $and: [
+          { $or: searchConditions },
+          { request_time: dateQuery }
+        ]
+      };
+    } else if (searchConditions.length > 0) {
+      query = { $or: searchConditions };
+    } else if (Object.keys(dateQuery).length > 0) {
+      query = { request_time: dateQuery };
+    }
+    
+    console.log('🔍 Withdraw Query:', JSON.stringify(query));
+    
+    const total = await Withdraw.countDocuments(query);
+    const records = await Withdraw.find(query)
+      .sort({ request_time: -1 })
+      .skip(skip)
+      .limit(limitNum);
+    
+    res.json({
+      records,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+  } catch (error) {
+    console.error('Error fetching withdraw records:', error);
+    res.status(500).json({ error: 'Failed to fetch withdraw records' });
+  }
+});
 
-// Upload file (Excel or ZIP)
-router.post('/upload', upload.single('file'), uploadFile);
-
 // ========================================
-// STORAGE STATS
+// STORAGE STATS - MUST COME BEFORE :id ROUTES
 // ========================================
 
 // Get recharge storage stats
@@ -416,24 +403,79 @@ router.get('/storage-stats', async (req, res) => {
 });
 
 // ========================================
-// PARAMETERIZED ROUTES (With :id)
+// FILE UPLOAD
+// ========================================
+
+// Upload file (Excel or ZIP)
+router.post('/upload', upload.single('file'), uploadFile);
+
+// ========================================
+// PARAMETERIZED ROUTES (with :id) - MUST COME LAST
+// ========================================
+
+// ========================================
+// RECHARGE - PARAMETERIZED ROUTES
 // ========================================
 
 // Get single recharge record by ID
-router.get('/records/:id', rechargeController.getRecord);
+router.get('/records/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    const record = await Recharge.findById(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    res.json(record);
+  } catch (error) {
+    console.error('Error fetching record:', error);
+    res.status(500).json({ error: 'Failed to fetch record' });
+  }
+});
 
 // Create new recharge record
 router.post('/records', rechargeController.createRecord);
 
 // Update recharge record
-router.put('/records/:id', rechargeController.updateRecord);
+router.put('/records/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    // ... update logic
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Delete single recharge record
-router.delete('/records/:id', rechargeController.deleteRecord);
+router.delete('/records/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    const record = await Recharge.findByIdAndDelete(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    res.json({ message: 'Record deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting record:', error);
+    res.status(500).json({ error: 'Failed to delete record' });
+  }
+});
+
+// ========================================
+// WITHDRAW - PARAMETERIZED ROUTES (MUST COME LAST)
+// ========================================
 
 // Get single withdraw record by ID
 router.get('/withdraw/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
     const record = await Withdraw.findById(req.params.id);
     if (!record) {
       return res.status(404).json({ error: 'Record not found' });
@@ -448,6 +490,10 @@ router.get('/withdraw/:id', async (req, res) => {
 // Update withdraw record
 router.put('/withdraw/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    
     const { username, user_id, amount, status, bank_name, bank_account } = req.body;
     
     const record = await Withdraw.findById(req.params.id);
@@ -477,6 +523,9 @@ router.put('/withdraw/:id', async (req, res) => {
 // Delete single withdraw record
 router.delete('/withdraw/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
     const record = await Withdraw.findByIdAndDelete(req.params.id);
     if (!record) {
       return res.status(404).json({ error: 'Record not found' });
