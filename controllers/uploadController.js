@@ -84,14 +84,13 @@ const processWithdrawFile = async (fileBuffer, fileName) => {
     
     // 🔥 FIXED: Correct column positions for withdraw file
     // Column A=0, B=1, C=2(empty), D=3(用户信息), E=4(所属代理), F=5(提现金额), G=6(银行信息), H=7(发起处理回调), I=8(代理审核2)
-    const colPositions = {
-      order: 0,      // Column A
-      user_info: 3,  // Column D (用户信息)
-      agent: 4,      // Column E (所属代理)
-      amount: 5,     // Column F (提现金额)
-      bank_info: 6,  // Column G (银行信息)
-      time: 7,       // Column H (发起处理回调)
-      status: 8      // Column I (代理审核2)
+     const colPositions = {
+      order: 0,      // Column A - web_scraper_order
+      user_info: 3,  // Column D - 用户信息
+      amount: 4,     // Column E - 提现金额 (FIXED)
+      bank_info: 5,  // Column F - 银行信息 (FIXED)
+      time: 6,       // Column G - 发起处理回调 (FIXED)
+      status: 7      // Column H - 代理审核2 (FIXED)
     };
     
     const savedRecords = [];
