@@ -72,17 +72,30 @@
                 <p>Today's Records</p>
             </div>
         </div>
-            <!-- NEW: Storage Stats Card -->
+    <!-- NEW: Storage Stats Card -->
     <div class="stat-card" style="grid-column: span 2;">
         <div class="stat-icon" style="background: #ec4899;">
             <i class="fas fa-database"></i>
         </div>
         <div class="stat-info">
-            <h3 id="storageUsage">0 MB</h3>
+            <h3 id="storageUsage">
+                <%= storage?.totalStorage || '0.00' %> MB
+            </h3>
             <p>Database Storage Used</p>
             <div style="margin-top: 5px; font-size: 12px; color: #999;">
-                <span id="recordCountStorage">0 records</span> · 
-                <span id="avgRecordSize">0 KB/record</span>
+                <span id="recordCountStorage">
+                    <%= storage?.recordCount || 0 %> records
+                </span> · 
+                <span id="avgRecordSize">
+                    <%= storage?.avgRecordSize || '0.00' %> KB/record
+                </span>
+            </div>
+            <!-- Optional: Show breakdown -->
+            <div style="margin-top: 8px; font-size: 11px; color: #aaa;">
+                Recharges: <%= storage?.recharges?.size || '0' %> MB 
+                (<%= storage?.recharges?.count || 0 %> records) | 
+                Withdraws: <%= storage?.withdraws?.size || '0' %> MB 
+                (<%= storage?.withdraws?.count || 0 %> records)
             </div>
         </div>
     </div>
