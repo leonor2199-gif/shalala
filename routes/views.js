@@ -10,49 +10,57 @@ async function getStorageStats() {
     try {
         const db = mongoose.connection.db;
         
-        // Get stats for both collections
-        let rechargeStats = { storageSize: 0, count: 0 };
-        let withdrawStats = { storageSize: 0, count: 0 };
+        let rechargeStats = { size: 0, count: 0 };
+        let withdrawStats = { size: 0, count: 0 };
         
         try {
-            // Check if collections exist before getting stats
-            const collections = await db.listCollections().toArray();
-            const collectionNames = collections.map(c => c.name);
+            // Get collection sizes using aggregate
+            const rechargeResult = await db.collection('recharges').aggregate([
+                { $collStats: { storageStats: {} } }
+            ]).toArray();
             
-            if (collectionNames.includes('recharges')) {
-                rechargeStats = await db.collection('recharges').stats();
-                console.log('📊 Recharge stats:', {
-                    storageSize: rechargeStats.storageSize,
-                    count: rechargeStats.count,
-                    avgObjSize: rechargeStats.avgObjSize
-                });
+            const withdrawResult = await db.collection('withdraws').aggregate([
+                { $collStats: { storageStats: {} } }
+            ]).toArray();
+            
+            if (rechargeResult.length > 0) {
+                rechargeStats = {
+                    size: rechargeResult[0].storageStats?.totalSize || 0,
+                    count: rechargeResult[0].storageStats?.count || 0
+                };
             }
-            if (collectionNames.includes('withdraws')) {
-                withdrawStats = await db.collection('withdraws').stats();
-                console.log('📊 Withdraw stats:', {
-                    storageSize: withdrawStats.storageSize,
-                    count: withdrawStats.count,
-                    avgObjSize: withdrawStats.avgObjSize
-                });
+            
+            if (withdrawResult.length > 0) {
+                withdrawStats = {
+                    size: withdrawResult[0].storageStats?.totalSize || 0,
+                    count: withdrawResult[0].storageStats?.count || 0
+                };
             }
         } catch (error) {
-            console.error('Error getting collection stats:', error);
+            console.error('Error getting collection stats via aggregate:', error);
+            // Fallback to stats() method
+            try {
+                const rechargeStatsFallback = await db.collection('recharges').stats();
+                const withdrawStatsFallback = await db.collection('withdraws').stats();
+                
+                rechargeStats = {
+                    size: rechargeStatsFallback.totalSize || 0,
+                    count: rechargeStatsFallback.count || 0
+                };
+                withdrawStats = {
+                    size: withdrawStatsFallback.totalSize || 0,
+                    count: withdrawStatsFallback.count || 0
+                };
+            } catch (fallbackError) {
+                console.error('Fallback stats error:', fallbackError);
+            }
         }
         
-        // Calculate total storage in MB - FIXED: use storageSize, not totalSize
-        const rechargeStorageMB = (rechargeStats.storageSize || 0) / (1024 * 1024);
-        const withdrawStorageMB = (withdrawStats.storageSize || 0) / (1024 * 1024);
+        const rechargeStorageMB = (rechargeStats.size || 0) / (1024 * 1024);
+        const withdrawStorageMB = (withdrawStats.size || 0) / (1024 * 1024);
         const totalStorageMB = rechargeStorageMB + withdrawStorageMB;
         const totalRecords = (rechargeStats.count || 0) + (withdrawStats.count || 0);
         const avgRecordSizeKB = totalRecords > 0 ? (totalStorageMB * 1024) / totalRecords : 0;
-        
-        console.log('💾 Total Storage:', {
-            rechargeMB: rechargeStorageMB.toFixed(2),
-            withdrawMB: withdrawStorageMB.toFixed(2),
-            totalMB: totalStorageMB.toFixed(2),
-            totalRecords: totalRecords,
-            avgKB: avgRecordSizeKB.toFixed(2)
-        });
         
         return {
             totalStorage: totalStorageMB.toFixed(2),
