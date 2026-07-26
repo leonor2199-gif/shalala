@@ -21,20 +21,38 @@ async function getStorageStats() {
             
             if (collectionNames.includes('recharges')) {
                 rechargeStats = await db.collection('recharges').stats();
+                console.log('📊 Recharge stats:', {
+                    storageSize: rechargeStats.storageSize,
+                    count: rechargeStats.count,
+                    avgObjSize: rechargeStats.avgObjSize
+                });
             }
             if (collectionNames.includes('withdraws')) {
                 withdrawStats = await db.collection('withdraws').stats();
+                console.log('📊 Withdraw stats:', {
+                    storageSize: withdrawStats.storageSize,
+                    count: withdrawStats.count,
+                    avgObjSize: withdrawStats.avgObjSize
+                });
             }
         } catch (error) {
             console.error('Error getting collection stats:', error);
         }
         
-        // Calculate total storage in MB
+        // Calculate total storage in MB - FIXED: use storageSize, not totalSize
         const rechargeStorageMB = (rechargeStats.storageSize || 0) / (1024 * 1024);
         const withdrawStorageMB = (withdrawStats.storageSize || 0) / (1024 * 1024);
         const totalStorageMB = rechargeStorageMB + withdrawStorageMB;
         const totalRecords = (rechargeStats.count || 0) + (withdrawStats.count || 0);
         const avgRecordSizeKB = totalRecords > 0 ? (totalStorageMB * 1024) / totalRecords : 0;
+        
+        console.log('💾 Total Storage:', {
+            rechargeMB: rechargeStorageMB.toFixed(2),
+            withdrawMB: withdrawStorageMB.toFixed(2),
+            totalMB: totalStorageMB.toFixed(2),
+            totalRecords: totalRecords,
+            avgKB: avgRecordSizeKB.toFixed(2)
+        });
         
         return {
             totalStorage: totalStorageMB.toFixed(2),
@@ -54,7 +72,9 @@ async function getStorageStats() {
         return {
             totalStorage: '0.00',
             recordCount: 0,
-            avgRecordSize: '0.00'
+            avgRecordSize: '0.00',
+            recharges: { size: '0.00', count: 0 },
+            withdraws: { size: '0.00', count: 0 }
         };
     }
 }
