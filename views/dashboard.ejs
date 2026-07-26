@@ -168,6 +168,23 @@
             margin-bottom: 32px;
         }
 
+.user-id-badge {
+    background-color: rgba(255, 255, 255, 0.15); /* Light semi-transparent background */
+    color: #ffffff;                              /* Pure white readable text */
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.8125rem;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+/* Fallback: If User ID is rendered directly inside the 3rd table column */
+#recordsTable tbody td:nth-child(3) {
+    color: #ffffff;
+    font-weight: 500;
+}
+
         .stat-card {
             background-color: var(--bg-surface);
             border: 1px solid var(--border-color);
