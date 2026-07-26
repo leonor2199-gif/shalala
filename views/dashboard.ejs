@@ -73,7 +73,7 @@
             </div>
         </div>
         
-        <!-- Storage Stats Card - FIXED CALCULATION -->
+        <!-- Storage Stats Card - FIXED -->
         <div class="stat-card" style="grid-column: span 2;">
             <div class="stat-icon" style="background: #ec4899;">
                 <i class="fas fa-database"></i>
@@ -81,11 +81,29 @@
             <div class="stat-info">
                 <h3 id="storageUsage">
                     <%
-                        // Calculate total storage correctly
-                        const rechargeSize = parseFloat(storage?.recharges?.size || 0);
-                        const withdrawSize = parseFloat(storage?.withdraws?.size || 0);
+                        // Parse storage data with proper fallbacks
+                        let rechargeSize = 0;
+                        let withdrawSize = 0;
+                        let rechargeCount = 0;
+                        let withdrawCount = 0;
+                        
+                        try {
+                            if (storage) {
+                                if (storage.recharges) {
+                                    rechargeSize = parseFloat(storage.recharges.size) || 0;
+                                    rechargeCount = parseInt(storage.recharges.count) || 0;
+                                }
+                                if (storage.withdraws) {
+                                    withdrawSize = parseFloat(storage.withdraws.size) || 0;
+                                    withdrawCount = parseInt(storage.withdraws.count) || 0;
+                                }
+                            }
+                        } catch(e) {
+                            console.error('Error parsing storage data:', e);
+                        }
+                        
                         const totalStorageMB = rechargeSize + withdrawSize;
-                        const totalRecords = (storage?.recharges?.count || 0) + (storage?.withdraws?.count || 0);
+                        const totalRecords = rechargeCount + withdrawCount;
                         const avgRecordSizeKB = totalRecords > 0 ? (totalStorageMB * 1024) / totalRecords : 0;
                     %>
                     <%= totalStorageMB.toFixed(2) %> MB
@@ -101,10 +119,10 @@
                 </div>
                 <!-- Breakdown -->
                 <div style="margin-top: 8px; font-size: 11px; color: #aaa;">
-                    Recharges: <%= storage?.recharges?.size || '0' %> MB 
-                    (<%= storage?.recharges?.count || 0 %> records) | 
-                    Withdraws: <%= storage?.withdraws?.size || '0' %> MB 
-                    (<%= storage?.withdraws?.count || 0 %> records)
+                    Recharges: <%= rechargeSize.toFixed(2) %> MB 
+                    (<%= rechargeCount %> records) | 
+                    Withdraws: <%= withdrawSize.toFixed(2) %> MB 
+                    (<%= withdrawCount %> records)
                 </div>
             </div>
         </div>
