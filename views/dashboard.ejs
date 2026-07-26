@@ -72,82 +72,91 @@
                 <p>Today's Records</p>
             </div>
         </div>
-    <!-- NEW: Storage Stats Card -->
-    <div class="stat-card" style="grid-column: span 2;">
-        <div class="stat-icon" style="background: #ec4899;">
-            <i class="fas fa-database"></i>
-        </div>
-        <div class="stat-info">
-            <h3 id="storageUsage">
-                <%= storage?.totalStorage || '0.00' %> MB
-            </h3>
-            <p>Database Storage Used</p>
-            <div style="margin-top: 5px; font-size: 12px; color: #999;">
-                <span id="recordCountStorage">
-                    <%= storage?.recordCount || 0 %> records
-                </span> · 
-                <span id="avgRecordSize">
-                    <%= storage?.avgRecordSize || '0.00' %> KB/record
-                </span>
+        
+        <!-- Storage Stats Card - FIXED CALCULATION -->
+        <div class="stat-card" style="grid-column: span 2;">
+            <div class="stat-icon" style="background: #ec4899;">
+                <i class="fas fa-database"></i>
             </div>
-            <!-- Optional: Show breakdown -->
-            <div style="margin-top: 8px; font-size: 11px; color: #aaa;">
-                Recharges: <%= storage?.recharges?.size || '0' %> MB 
-                (<%= storage?.recharges?.count || 0 %> records) | 
-                Withdraws: <%= storage?.withdraws?.size || '0' %> MB 
-                (<%= storage?.withdraws?.count || 0 %> records)
+            <div class="stat-info">
+                <h3 id="storageUsage">
+                    <%
+                        // Calculate total storage correctly
+                        const rechargeSize = parseFloat(storage?.recharges?.size || 0);
+                        const withdrawSize = parseFloat(storage?.withdraws?.size || 0);
+                        const totalStorageMB = rechargeSize + withdrawSize;
+                        const totalRecords = (storage?.recharges?.count || 0) + (storage?.withdraws?.count || 0);
+                        const avgRecordSizeKB = totalRecords > 0 ? (totalStorageMB * 1024) / totalRecords : 0;
+                    %>
+                    <%= totalStorageMB.toFixed(2) %> MB
+                </h3>
+                <p>Database Storage Used</p>
+                <div style="margin-top: 5px; font-size: 12px; color: #999;">
+                    <span id="recordCountStorage">
+                        <%= totalRecords %> records
+                    </span> · 
+                    <span id="avgRecordSize">
+                        <%= avgRecordSizeKB.toFixed(2) %> KB/record
+                    </span>
+                </div>
+                <!-- Breakdown -->
+                <div style="margin-top: 8px; font-size: 11px; color: #aaa;">
+                    Recharges: <%= storage?.recharges?.size || '0' %> MB 
+                    (<%= storage?.recharges?.count || 0 %> records) | 
+                    Withdraws: <%= storage?.withdraws?.size || '0' %> MB 
+                    (<%= storage?.withdraws?.count || 0 %> records)
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <!-- Controls -->
-<div class="controls-container">
-    <div class="search-section">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search by username or user ID..." />
-            <button onclick="searchRecords()" class="btn btn-primary">
-                <i class="fas fa-search"></i> Search
+    <div class="controls-container">
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by username or user ID..." />
+                <button onclick="searchRecords()" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button onclick="clearSearch()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </div>
+        
+        <!-- Date Range Filter -->
+        <div class="date-filter-section">
+            <div class="date-filter-box">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="date" id="startDate" title="Start Date" />
+                <span style="color: #64748b;">to</span>
+                <input type="date" id="endDate" title="End Date" />
+                <button onclick="applyDateFilter()" class="btn btn-primary btn-sm">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <button onclick="clearDateFilter()" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <a href="https://botadmin-2r2n.onrender.com/login" target="_blank" class="btn btn-purple">
+                <i class="fas fa-external-link-alt"></i> Details
+            </a>
+            <button onclick="openAddModal()" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add New
             </button>
-            <button onclick="clearSearch()" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Clear
+            <button onclick="exportRecords()" class="btn btn-info">
+                <i class="fas fa-download"></i> Export
             </button>
+            <button onclick="openDeleteAllModal()" class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Delete All
+            </button>
+            <span id="recordCount" class="record-count">Showing: 0 records</span>
         </div>
     </div>
-    
-    <!-- NEW: Date Range Filter -->
-    <div class="date-filter-section">
-        <div class="date-filter-box">
-            <i class="fas fa-calendar-alt"></i>
-            <input type="date" id="startDate" title="Start Date" />
-            <span style="color: #64748b;">to</span>
-            <input type="date" id="endDate" title="End Date" />
-            <button onclick="applyDateFilter()" class="btn btn-primary btn-sm">
-                <i class="fas fa-filter"></i> Filter
-            </button>
-            <button onclick="clearDateFilter()" class="btn btn-secondary btn-sm">
-                <i class="fas fa-times"></i> Clear
-            </button>
-        </div>
-    </div>
-    
-    <div class="actions-section">
-        <a href="https://botadmin-2r2n.onrender.com/login" target="_blank" class="btn btn-purple">
-            <i class="fas fa-external-link-alt"></i> Details
-        </a>
-        <button onclick="openAddModal()" class="btn btn-success">
-            <i class="fas fa-plus"></i> Add New
-        </button>
-        <button onclick="exportRecords()" class="btn btn-info">
-            <i class="fas fa-download"></i> Export
-        </button>
-        <button onclick="openDeleteAllModal()" class="btn btn-danger">
-            <i class="fas fa-trash-alt"></i> Delete All
-        </button>
-        <span id="recordCount" class="record-count">Showing: 0 records</span>
-    </div>
-</div>
 
     <!-- Table -->
     <div class="table-container">
