@@ -4,396 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Recharge Dashboard</title>
-
     <link rel="stylesheet" href="/css/style.css">
-
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Inter", "Segoe UI", sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background:
-                radial-gradient(circle at top left, #2563eb, transparent 40%),
-                radial-gradient(circle at bottom right, #7c3aed, transparent 40%),
-                #020617;
-            overflow: hidden;
-        }
-
-        body::before {
-            content: "";
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(59,130,246,0.3);
-            filter: blur(120px);
-            animation: float 8s infinite alternate;
-        }
-
-        @keyframes float {
-            from {
-                transform: translate(-100px,-50px);
-            }
-            to {
-                transform: translate(100px,50px);
-            }
-        }
-
-
-        .login-container {
-            width: 100%;
-            padding: 20px;
-            z-index: 2;
-        }
-
-
-        .login-card {
-            max-width: 430px;
-            margin:auto;
-            padding:40px;
-            border-radius:24px;
-
-            background:
-            rgba(255,255,255,0.08);
-
-            backdrop-filter: blur(18px);
-
-            border:1px solid rgba(255,255,255,0.15);
-
-            box-shadow:
-            0 25px 60px rgba(0,0,0,.45);
-
-            color:white;
-
-            animation: fadeIn .6s ease;
-        }
-
-
-        @keyframes fadeIn {
-            from {
-                opacity:0;
-                transform:translateY(30px);
-            }
-            to {
-                opacity:1;
-                transform:none;
-            }
-        }
-
-
-        .login-header {
-            text-align:center;
-            margin-bottom:35px;
-        }
-
-
-        .login-icon {
-            width:90px;
-            height:90px;
-
-            display:flex;
-            justify-content:center;
-            align-items:center;
-
-            margin:0 auto 20px;
-
-            font-size:42px;
-
-            border-radius:50%;
-
-            background:
-            linear-gradient(135deg,#3b82f6,#8b5cf6);
-
-            box-shadow:
-            0 10px 30px rgba(59,130,246,.5);
-        }
-
-
-        h1 {
-            font-size:30px;
-            font-weight:700;
-            margin-bottom:10px;
-        }
-
-
-        .login-header p {
-            color:#cbd5e1;
-            font-size:15px;
-        }
-
-
-
-        .alert {
-            padding:14px;
-            border-radius:12px;
-            margin-bottom:20px;
-
-            display:flex;
-            gap:10px;
-            align-items:center;
-        }
-
-
-        .alert-error {
-            background:rgba(239,68,68,.15);
-            border:1px solid rgba(239,68,68,.4);
-            color:#fecaca;
-        }
-
-
-
-        .form-group {
-            margin-bottom:25px;
-        }
-
-
-        label {
-
-            display:block;
-
-            margin-bottom:10px;
-
-            font-size:14px;
-
-            color:#e2e8f0;
-        }
-
-
-        label i {
-            margin-right:8px;
-            color:#60a5fa;
-        }
-
-
-
-        input {
-
-            width:100%;
-
-            padding:15px 18px;
-
-            border-radius:14px;
-
-            border:1px solid rgba(255,255,255,.15);
-
-            background:
-            rgba(255,255,255,.08);
-
-            color:white;
-
-            font-size:15px;
-
-            outline:none;
-
-            transition:.3s;
-        }
-
-
-        input::placeholder {
-            color:#94a3b8;
-        }
-
-
-        input:focus {
-
-            border-color:#60a5fa;
-
-            background:
-            rgba(255,255,255,.12);
-
-            box-shadow:
-            0 0 0 4px rgba(96,165,250,.15);
-        }
-
-
-
-        .btn {
-
-            width:100%;
-
-            padding:15px;
-
-            border:none;
-
-            border-radius:14px;
-
-            cursor:pointer;
-
-            font-size:16px;
-
-            font-weight:600;
-
-            color:white;
-
-
-            background:
-            linear-gradient(135deg,#2563eb,#7c3aed);
-
-
-            box-shadow:
-            0 10px 25px rgba(37,99,235,.35);
-
-
-            transition:.3s;
-        }
-
-
-
-        .btn:hover {
-
-            transform:translateY(-2px);
-
-            box-shadow:
-            0 15px 35px rgba(37,99,235,.55);
-        }
-
-
-        .btn i {
-            margin-right:8px;
-        }
-
-
-
-        .login-footer {
-
-            margin-top:30px;
-
-            text-align:center;
-
-            color:#94a3b8;
-
-            font-size:14px;
-        }
-
-
-
-        @media(max-width:480px){
-
-            .login-card{
-                padding:30px 25px;
-            }
-
-            h1{
-                font-size:25px;
-            }
-        }
-
-
-    </style>
-
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
-
-<body>
-
-
-<div class="login-container">
-
-
-    <div class="login-card">
-
-
-        <div class="login-header">
-
-            <div class="login-icon">
-                <i class="fas fa-database"></i>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            
+            <div class="login-header">
+                <div class="logo-badge">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h1>Recharge Dashboard</h1>
+                <p>Welcome back! Please enter your password.</p>
             </div>
 
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="alert alert-error" role="alert">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span><%= error %></span>
+                </div>
+            <% } %>
 
-            <h1>Recharge Dashboard</h1>
+            <form action="/login" method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="••••••••••••" 
+                            required 
+                            autofocus 
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
 
-            <p>
-                Secure administrator access portal
-            </p>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
 
-        </div>
-
-
-
-        <% if (error) { %>
-
-        <div class="alert alert-error">
-
-            <i class="fas fa-exclamation-circle"></i>
-
-            <%= error %>
-
-        </div>
-
-        <% } %>
-
-
-
-
-        <form action="/login" method="POST">
-
-
-            <div class="form-group">
-
-                <label for="password">
-
-                    <i class="fas fa-lock"></i>
-
-                    Admin Password
-
-                </label>
-
-
-                <input
-
-                    type="password"
-
-                    id="password"
-
-                    name="password"
-
-                    placeholder="Enter your password"
-
-                    required
-
-                    autofocus
-
-                >
-
+            <div class="login-footer">
+                <i class="fas fa-shield-halved"></i>
+                <span>End-to-end encrypted session</span>
             </div>
 
-
-
-            <button type="submit" class="btn">
-
-                <i class="fas fa-sign-in-alt"></i>
-
-                Login Dashboard
-
-            </button>
-
-
-        </form>
-
-
-
-        <div class="login-footer">
-
-            🔒 Protected Secure Access
-
         </div>
-
-
-
     </div>
 
+    <!-- Password visibility toggle script -->
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        const toggleIcon = document.querySelector('#toggleIcon');
 
-</div>
-
-
+        togglePassword?.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            toggleIcon.classList.toggle('fa-eye');
+            toggleIcon.classList.toggle('fa-eye-slash');
+        });
+    </script>
 </body>
 </html>
